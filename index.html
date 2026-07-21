@@ -392,7 +392,7 @@
   </section>
 
   <footer>
-    A personal-stats prototype, v0.7. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
+    A personal-stats prototype, v0.8. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
     <div class="madeby">Created by <a href="https://katsuma0.github.io" target="_blank" rel="noopener">Katsuma Onishi</a></div>
   </footer>
 </main>
@@ -1091,7 +1091,17 @@ function computeDeep(plays, S) {
   let dayFirstTrack = null, dayArtists = new Set(), dayTrackCounts = new Map();
   let curHourKey = null, curHourMs = 0, curWeekKey = null, curWeekMs = 0;
   let atSessionStart = true;
+  D.artistFirst = new Map(); D.artistLast = new Map();
+  const artistPlayCount = new Map(); D.fandom50 = [];
+  D.trackMonths = new Map(); const firstPlay = new Map(); D.trackEarly = new Map();
+  D.wkndArtist = new Map(); D.wkdayArtist = new Map();
+  D.loop3 = 0; D.regretReversals = 0;
+  D.skipByMonth = Array.from({ length: 12 }, () => ({ s: 0, n: 0 }));
+  D.yearTrack = new Map(); D.newPerYear = new Map();
+  D.maxDayStreams = { n: 0 }; let dayPlayCount = 0;
   const commitDay = (dk) => {
+    if (dayPlayCount > D.maxDayStreams.n) D.maxDayStreams = { n: dayPlayCount, day: dk };
+    dayPlayCount = 0;
     if (dayFirstTrack && dayFirstTrack === lastTrackToday) D.encoreDays++;
     for (const c of dayTrackCounts.values()) if (c >= 3) { D.offenderDays++; break; }
     if (dayArtists.size > D.maxArtistsDay.n) D.maxArtistsDay = { n: dayArtists.size, day: dk };
@@ -1165,6 +1175,22 @@ function computeDeep(plays, S) {
       if (!D.firstOfYear.has(yr)) D.firstOfYear.set(yr, [p.t, tKey]);
       dayArtists.add(p.artist); bump(dayTrackCounts, tKey);
       if (atSessionStart) { bump(D.sessionFirst, tKey); atSessionStart = false; }
+      dayPlayCount++;
+      const mkk = monthKey(p.t);
+      if (!D.artistFirst.has(p.artist)) D.artistFirst.set(p.artist, [p.t, tKey]);
+      D.artistLast.set(p.artist, p.t);
+      const apc = (artistPlayCount.get(p.artist) || 0) + 1;
+      artistPlayCount.set(p.artist, apc);
+      if (apc === 50) D.fandom50.push([p.artist, Math.max(1, Math.round((p.t - D.artistFirst.get(p.artist)[0]) / 86400000))]);
+      const tm = D.trackMonths.get(tKey);
+      if (!tm) D.trackMonths.set(tKey, { lm: mkk, n: 1 });
+      else if (tm.lm !== mkk) { tm.lm = mkk; tm.n++; }
+      const fp = firstPlay.get(tKey);
+      if (fp === undefined) { firstPlay.set(tKey, p.t); bump(D.newPerYear, yr); }
+      else if (p.t - fp < 7 * 86400000) bump(D.trackEarly, tKey);
+      bump(dow >= 5 ? D.wkndArtist : D.wkdayArtist, p.artist, p.ms);
+      if (!D.yearTrack.has(yr)) D.yearTrack.set(yr, new Map());
+      bump(D.yearTrack.get(yr), tKey);
       const ph = moonPhase(p.t.getTime());
       D.moon[ph] += p.ms;
       if (ph === 4) bump(D.moonFullTracks, tKey);
@@ -1197,6 +1223,7 @@ function computeDeep(plays, S) {
       if (!seenOnce.has(tKey)) { seenOnce.add(tKey); if (p.skipped) D.firstSkipped.add(tKey); }
       if (p.skipped) { bump(D.trackSkips, tKey); D.skipFree.cur = 0; }
       else { D.skipFree.cur++; if (D.skipFree.cur > D.skipFree.max) D.skipFree.max = D.skipFree.cur; }
+      D.skipByMonth[p.t.getMonth()].n++; if (p.skipped) D.skipByMonth[p.t.getMonth()].s++;
       const li = letterIdx(p.track);
       if (li >= 0) { D.letterSkip[li].n++; if (p.skipped) D.letterSkip[li].s++; }
       if (p.shuffle === true) { D.shufSkip.n++; if (p.skipped) D.shufSkip.s++; }
@@ -1214,10 +1241,12 @@ function computeDeep(plays, S) {
       if (gap <= 10 * 60000 && prev.skipped !== null && p.skipped !== null) {
         D.contagion.pairs++;
         if (prev.skipped) { D.contagion.exposedN++; if (p.skipped) D.contagion.exposedS++; }
+        if (prev.skipped === true && p.skipped !== true && tkey(prev.track, prev.artist) === tKey) D.regretReversals++;
       }
       if (tkey(prev.track, prev.artist) === tKey && gap <= 20 * 60000) {
         D.dejavu++;
         D._loop = (D._loop || 1) + 1;
+        if (D._loop === 3) D.loop3++;
         if (D._loop > D.maxLoop.len) D.maxLoop = { len: D._loop, track: p.track, artist: p.artist, when: p.t };
       } else D._loop = 1;
       if (gap > 30 * 60000) { endSession(new Date(prev.t.getTime() + prev.ms)); sesStart = p.t; sesMs = 0; sesTracks = 0; atSessionStart = true; }
@@ -1634,7 +1663,6 @@ function buildPool(S, D) {
   add(4, 6, 'Day-of-month favoritism', 'you are not neutral about calendar days', (b) => {
     dCols(b, D.dom.map((v, i) => ({ label: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : '', full: 'Day ' + (i + 1), v })), { tiny: true, tipUnit: 'streams' });
   });
-  add(4, 3, 'Punctuation party', 'streams by mark', (b) => dCols(b, Object.entries(D.punct).map(([k, v]) => ({ label: k, full: 'Titles with ' + k, v })), { wide: true, tipUnit: 'streams' }));
   add(4, 3, 'The (feat.) economy', 'titles with a plus-one in parentheses', (b) => dMeter(b, D.parens / streams, pct1(D.parens / streams) + ' of your streams'));
   add(4, 4, 'The color wheel', 'colors in your titles', (b) => {
     const top = [...D.colorHits.entries()].sort((a, c) => c[1] - a[1]).slice(0, 6);
@@ -1687,12 +1715,7 @@ function buildPool(S, D) {
     dSentence(b, 'Longest: <b>' + esc(D.longTitle.name) + '</b> (' + D.longTitle.name.length + ' chars)');
     dSentence(b, 'Shortest: <b>' + esc(D.shortTitle.name) + '</b> (' + D.shortTitle.name.length + ')');
   }, () => D.longTitle && D.shortTitle);
-  add(5, 2, 'The letter E invoice', '', (b) => dBig(b, fmtInt(D.eCount), 'letter Es', 'streamed via titles alone'));
-  add(5, 3, 'Vowel movement', 'A, E, I, O, U doing the heavy lifting', (b) => dMeter(b, D.vowels / Math.max(1, D.letters), pct1(D.vowels / Math.max(1, D.letters)) + ' of all letters streamed'));
-  add(5, 2, 'Letter mileage', '', (b) => dBig(b, (D.mileage / 1000000).toFixed(2), 'million letters', (D.mileage / 1200000).toFixed(1) + ' Moby-Dicks of title text'));
   add(5, 2, 'The definite article', 'bands named The...', (b) => dBig(b, fmtHours(D.theMs), 'hours', 'committed to a grammatical particle'), () => D.theMs > 0);
-  add(5, 2, 'Scrabble royalty', 'highest-scoring artist name', (b) => dBig(b, fmtInt(D.scrabble.score), 'points', '<b>' + esc(D.scrabble.name) + '</b>, illegal on any board'), () => D.scrabble);
-  add(5, 2, 'Wordle-sized', 'one word, five letters', (b) => dBig(b, fmtInt(D.fiveLetter), 'streams', 'fit in a single guess'));
   add(5, 3, 'Same name, different song', '', (b) => {
     let best = null;
     for (const [name, set] of D.sameName) if (set.size > 1 && (!best || set.size > best.set.size)) best = { name, set };
@@ -1716,17 +1739,10 @@ function buildPool(S, D) {
   add(6, 6, 'The alphabet of grudges', 'skip rate by first letter', (b) => {
     dCols(b, D.letterSkip.map((x, i) => ({ label: String.fromCharCode(65 + i), full: 'Titles starting with ' + String.fromCharCode(65 + i), v: x.n >= 10 ? Math.round(x.s / x.n * 100) : 0 })), { tiny: true, tipUnit: '% skipped' });
   }, () => hasSkip);
-  add(6, 3, 'Small hours, small words', 'title length, day vs 2am', (b) => {
-    const nA = D.nightLen.sum / D.nightLen.n, dA = D.dayLen.sum / D.dayLen.n;
-    dSentence(b, 'Day: <b>' + dA.toFixed(1) + ' chars</b>. After midnight: <b>' + nA.toFixed(1) + '</b>. ' + (nA < dA ? 'No energy for subtitles at 2am.' : 'Baroque at night. Unusual.'));
-  }, () => D.nightLen.n >= 20);
   add(6, 2, 'Chronotype certificate', 'your center of listening gravity', (b) => {
     const h = Math.floor(D.chronotype / 60), m = Math.round(D.chronotype % 60) % 60;
     dBig(b, fmtClock(h, m), '', 'your listening day balances at this exact minute');
   });
-  add(6, 3, 'Alliteration station', 'titles where every word matches', (b) => {
-    dBig(b, fmtInt(D.allit.streams), 'streams', D.allit.ex ? 'e.g. <b>' + esc(D.allit.ex.name) + '</b>' : '');
-  }, () => D.allit.streams > 0);
   add(6, 6, 'The ransom note', 'type a word, we cut the letters', (b) => {
     const input = el('input'); input.type = 'text'; input.placeholder = 'your name...'; input.maxLength = 24;
     const res = el('div');
@@ -1779,10 +1795,6 @@ function buildPool(S, D) {
     });
     b.append(grid);
   }, () => D.hasSeconds);
-  add(7, 2, 'Palindrome o’clock', '12:21, 13:31, and friends', (b) => {
-    const f = topTrackOf(D.palinFav);
-    dBig(b, fmtInt(D.palinTime), 'streams', f ? 'favorite: <b>' + esc(f.short) + '</b>' : '');
-  });
   add(7, 2, 'Punctuality award', 'started at :00:00 exactly', (b) => dBig(b, fmtInt(D.topOfHour), 'streams', 'on the second. Nobody does that on purpose'), () => D.hasSeconds);
   add(7, 2, 'Friday the 13th', 'survival log', (b) => dBig(b, fmtInt(D.fri13), 'streams', D.fri13 ? 'survived every one' : 'never risked it'));
   add(7, 2, 'February 29', 'a day that mostly does not exist', (b) => dBig(b, fmtInt(D.leap), 'streams', D.leap ? 'attendance on a fake day' : 'you refuse to acknowledge it'));
@@ -1827,7 +1839,6 @@ function buildPool(S, D) {
     const music = total / (total + Math.max(1, S.podcastMs));
     dMeter(b, music, pct1(music) + '. The forecast is songs');
   });
-  add(9, 2, 'Stats on this page', '', (b) => dBig(b, fmtInt(dealCount), 'stats', 'you are reading a stat about them'));
   add(10, 3, 'Streams on days ending in y', 'a complete analysis', (b) => {
     dMeter(b, 1, '100%. Every single day cooperated.');
   });
@@ -1929,6 +1940,104 @@ function buildPool(S, D) {
       add(4, 3, 'First song of ' + yr, '', ((w2, tk2, y2) => (b) => {
         dSentence(b, '<b>' + esc(nameOf(tk2)) + '</b>, ' + niceDate(w2) + '. ' + y2 + ' had a tone from day one.');
       })(first[0], first[1], yr));
+    }
+  });
+
+  /* ===== the good bank ===== */
+  add(3, 3, 'The 1 percent', 'how few songs carry half your listening', (b) => {
+    const sorted = [...S.byTrack.values()].sort((a, c) => c.plays - a.plays);
+    let cum = 0, n = 0; const half = streams / 2;
+    for (const t of sorted) { cum += t.plays; n++; if (cum >= half) break; }
+    dSentence(b, '<b>' + fmtInt(n) + ' songs</b> carry half of your ' + fmtInt(streams) + ' streams. The other ' + fmtInt(S.byTrack.size - n) + ' split the rest.');
+  }, () => S.byTrack.size > 20);
+  add(3, 2, 'Binge record', 'most songs in one day', (b) => dBig(b, fmtInt(D.maxDayStreams.n), 'songs', niceDate(new Date(D.maxDayStreams.day + 'T12:00:00'))), () => D.maxDayStreams.n > 10 && D.maxDayStreams.day);
+  add(3, 3, 'Perfect attendance', 'months without a single silent day', (b) => {
+    const mdays = new Map(); for (const [dk2] of S.days) bump(mdays, dk2.slice(0, 7));
+    let n = 0, ex = null;
+    for (const [mk2, c] of mdays) { const [y2, m2] = mk2.split('-').map(Number); if (c === new Date(y2, m2, 0).getDate()) { n++; ex = mk2; } }
+    dSentence(b, n ? '<b>' + fmtInt(n) + ' months</b> where you listened every single day. Most recent: ' + trendLabelLong(ex, true) + '.' : 'None yet. Every month so far has at least one silent day.');
+  }, () => S.months.length > 2);
+  add(3, 2, 'The constant', 'in and out of rotation the longest', (b) => {
+    let best = null; for (const [tk, r] of D.trackMonths) if (!best || r.n > best.r.n) best = { tk, r };
+    dBig(b, fmtInt(best.r.n), 'months', 'have contained <b>' + esc(titleOf(best.tk)) + '</b>');
+  }, () => D.trackMonths.size > 0 && S.months.length > 6);
+  add(4, 3, 'The ghosted favorite', 'a top-10 artist you quietly stopped playing', (b) => {
+    const g = S.topArtists.slice(0, 10).map(a => ({ a, last: D.artistLast.get(a.name) })).filter(x => x.last).sort((q, r) => q.last - r.last)[0];
+    dSentence(b, 'You have not played <b>' + esc(g.a.name) + '</b> since <b>' + niceDate(g.last) + '</b>. That is ' + fmtInt(Math.round((S.last - g.last) / 86400000)) + ' days and counting.');
+  }, () => S.topArtists.length >= 10 && S.topArtists.slice(0, 10).some(a => { const l = D.artistLast.get(a.name); return l && (S.last - l) > 60 * 86400000; }));
+  add(4, 2, 'Fastest fandom', 'first listen to 50 plays', (b) => {
+    const f = D.fandom50.slice().sort((q, r) => q[1] - r[1])[0];
+    dBig(b, fmtInt(f[1]), 'days', 'to hit 50 plays of <b>' + esc(f[0]) + '</b>');
+  }, () => D.fandom50.length > 0);
+  add(4, 2, 'Slow burn', 'the fandom that took its time', (b) => {
+    const f = D.fandom50.slice().sort((q, r) => r[1] - q[1])[0];
+    dBig(b, fmtInt(f[1]), 'days', 'from first listen to 50 plays of <b>' + esc(f[0]) + '</b>');
+  }, () => D.fandom50.length >= 2);
+  add(4, 3, 'The gateway song', 'where your top artist began', (b) => {
+    const top = S.topArtists[0];
+    const g = D.artistFirst.get(top.name);
+    dSentence(b, 'Your first <b>' + esc(top.name) + '</b> play was <b>' + esc(titleOf(g[1])) + '</b>, ' + niceDate(g[0]) + '. ' + fmtInt(top.plays) + ' plays later, here you are.');
+  }, () => S.topArtists.length > 0 && D.artistFirst.has(S.topArtists[0].name));
+  add(4, 3, 'Weekend personality', 'you are two different listeners', (b) => {
+    const wd = topOf(D.wkdayArtist), we = topOf(D.wkndArtist);
+    dSentence(b, 'Weekdays belong to <b>' + esc(wd[0]) + '</b>. Weekends belong to <b>' + esc(we[0]) + '</b>.');
+  }, () => { const wd = topOf(D.wkdayArtist), we = topOf(D.wkndArtist); return wd && we && wd[0] !== we[0]; });
+  add(4, 2, 'The instant classic', 'biggest first week for a new song', (b) => {
+    const t2 = topOf(D.trackEarly);
+    dBig(b, fmtInt(t2[1] + 1), 'plays', 'of <b>' + esc(titleOf(t2[0])) + '</b> in its first seven days');
+  }, () => D.trackEarly.size > 0);
+  add(4, 2, 'Milestone pace', 'your first thousand streams vs your latest', (b) => {
+    const d1 = Math.round((D.allStreams[999][0] - D.allStreams[0][0]) / 86400000);
+    const n2 = D.allStreams.length;
+    const d2 = Math.round((D.allStreams[n2 - 1][0] - D.allStreams[n2 - 1000][0]) / 86400000);
+    dBig(b, fmtInt(d1) + ' vs ' + fmtInt(d2), 'days', 'per thousand, then and now');
+  }, () => D.allStreams.length >= 2500);
+  add(4, 2, 'The average hit', 'how long a favorite stays in rotation', (b) => {
+    const spans = [];
+    for (const [tk, t] of S.byTrack) if (t.plays >= 20 && D.lastPlay.has(tk)) spans.push((D.lastPlay.get(tk) - t.first) / 86400000);
+    dBig(b, fmtInt(spans.reduce((q, r) => q + r, 0) / spans.length), 'days', 'from first play to last, for 20+ play songs');
+  }, () => [...S.byTrack.values()].filter(t => t.plays >= 20).length >= 5);
+  add(4, 2, 'Album completion', 'most tracks tried from one album', (b) => {
+    let best = null; for (const [alb, set] of D.albumTracks) if (!best || set.size > best.set.size) best = { alb, set };
+    dBig(b, fmtInt(best.set.size), 'tracks', 'from <b>' + esc(best.alb) + '</b>');
+  }, () => D.albumTracks.size > 0);
+  add(4, 2, 'The breakfast track', 'most played before 9am', (b) => {
+    const m = new Map();
+    for (let h2 = 5; h2 < 9; h2++) for (const [tk, n2] of D.hourTrack[h2]) bump(m, tk, n2);
+    const t2 = topOf(m);
+    dBig(b, fmtInt(t2[1]), 'plays', 'of <b>' + esc(titleOf(t2[0])) + '</b> with breakfast');
+  }, () => D.hourTrack.slice(5, 9).some(m2 => m2.size));
+  add(5, 2, 'Triple plays', 'the same song three times in a row', (b) => dBig(b, fmtInt(D.loop3), 'times', 'you tripled down'), () => D.loop3 > 0);
+  add(5, 2, 'No wait, come back', 'skipped, then replayed within minutes', (b) => dBig(b, fmtInt(D.regretReversals), 'reversals', ''), () => hasSkip && D.regretReversals > 0);
+  add(5, 2, 'Skip season', 'the month you are hardest to please', (b) => {
+    let bi = 0, br = 0;
+    D.skipByMonth.forEach((x, i2) => { if (x.n >= 30) { const r = x.s / x.n; if (r > br) { br = r; bi = i2; } } });
+    dBig(b, MONTHS_FULL[bi], '', pct1(br) + ' of ' + MONTHS_FULL[bi] + ' plays get skipped');
+  }, () => hasSkip && D.skipByMonth.some(x => x.n >= 30 && x.s > 0));
+  add(5, 2, 'Ghost months', 'entire months of nothing', (b) => {
+    const seen = new Set(S.months.map(x => x[0]));
+    let n = 0; const cur = new Date(S.first); cur.setDate(1);
+    while (cur <= S.last) { if (!seen.has(monthKey(cur))) n++; cur.setMonth(cur.getMonth() + 1); }
+    dBig(b, fmtInt(n), 'months', n ? 'of complete silence inside your own history' : 'you have never taken a month off');
+  }, () => S.months.length > 3);
+  add(5, 3, 'January vs December', 'how you start years vs how you end them', (b) => {
+    const jan = [...D.monthArtist[0].values()].reduce((q, r) => q + r, 0);
+    const dec = [...D.monthArtist[11].values()].reduce((q, r) => q + r, 0);
+    dCols(b, [{ label: 'Jan', full: 'All your Januaries', v: Math.round(jan / 3600000) }, { label: 'Dec', full: 'All your Decembers', v: Math.round(dec / 3600000) }], { wide: true, tipUnit: 'hours' });
+  }, () => D.monthArtist[0].size > 0 && D.monthArtist[11].size > 0);
+  fam('yearreview', () => {
+    for (const [yr2, m2] of D.yearTrack) {
+      add(3, 3, 'Your ' + yr2 + ' song', '', ((y3, mm2) => (b) => {
+        const t2 = topOf(mm2);
+        dSentence(b, '<b>' + esc(nameOf(t2[0])) + '</b>, ' + fmtInt(t2[1]) + ' plays. That was ' + y3 + '.');
+      })(yr2, m2), ((mm2) => () => mm2.size > 0)(m2));
+    }
+  });
+  fam('newmusic', () => {
+    for (const [yr2, n2] of D.newPerYear) {
+      add(4, 2, 'New songs in ' + yr2, '', ((y3, k2) => (b) => {
+        dBig(b, fmtInt(k2), 'first plays', 'songs that entered your life in ' + y3);
+      })(yr2, n2));
     }
   });
 
