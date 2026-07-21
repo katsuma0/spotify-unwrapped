@@ -389,7 +389,7 @@
   </section>
 
   <footer>
-    A personal-stats prototype, v0.5.0. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
+    A personal-stats prototype, v0.6. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
   </footer>
 </main>
 
@@ -1628,7 +1628,7 @@ function buildPool(S, D) {
   const PAIRS = [['Saturday', 'Sunday', S.byDow[5], S.byDow[6]], ['9am', '9pm', S.byHour[9], S.byHour[21]], ['noon', 'midnight', S.byHour[12], S.byHour[0]]];
   fam('pairs', () => {
     for (const [la, lb, va, vb] of PAIRS) {
-      add(4, 2, la + ' vs ' + lb, 'the eternal rivalry', (b) => {
+      add(4, 2, la + ' vs ' + lb, 'settling it with data', (b) => {
         dCols(b, [{ label: la, full: la, v: Math.round(va / 60000) }, { label: lb, full: lb, v: Math.round(vb / 60000) }], { wide: true, tipUnit: 'min' });
       });
     }
@@ -1693,7 +1693,7 @@ function buildPool(S, D) {
   }, () => D.nightLen.n >= 20);
   add(6, 2, 'Chronotype certificate', 'your center of listening gravity', (b) => {
     const h = Math.floor(D.chronotype / 60), m = Math.round(D.chronotype % 60) % 60;
-    dBig(b, fmtClock(h, m), '', 'not redeemable anywhere');
+    dBig(b, fmtClock(h, m), '', 'your listening day balances at this exact minute');
   });
   add(6, 3, 'Alliteration station', 'titles where every word matches', (b) => {
     dBig(b, fmtInt(D.allit.streams), 'streams', D.allit.ex ? 'e.g. <b>' + esc(D.allit.ex.name) + '</b>' : '');
@@ -1742,7 +1742,7 @@ function buildPool(S, D) {
     const f = topTrackOf(D.palinFav);
     dBig(b, fmtInt(D.palinTime), 'streams', f ? 'favorite: <b>' + esc(f.short) + '</b>' : '');
   });
-  add(7, 2, 'Punctuality award', 'started at :00:00 exactly', (b) => dBig(b, fmtInt(D.topOfHour), 'streams', 'German rail could never'), () => D.hasSeconds);
+  add(7, 2, 'Punctuality award', 'started at :00:00 exactly', (b) => dBig(b, fmtInt(D.topOfHour), 'streams', 'on the second. Nobody does that on purpose'), () => D.hasSeconds);
   add(7, 2, 'Friday the 13th', 'survival log', (b) => dBig(b, fmtInt(D.fri13), 'streams', D.fri13 ? 'survived every one' : 'never risked it'));
   add(7, 2, 'February 29', 'a day that mostly does not exist', (b) => dBig(b, fmtInt(D.leap), 'streams', D.leap ? 'attendance on a fake day' : 'you refuse to acknowledge it'));
   fam('mmclub', () => {
@@ -1795,7 +1795,7 @@ function buildPool(S, D) {
     dSentence(b, 'One bar. It won.');
   });
   add(9, 2, 'Moons consulted', 'for the moon phase chart', (b) => dBig(b, '1', 'moon', 'we only have the one'));
-  add(9, 2, 'Your listener ranking', 'among users of this dashboard', (b) => dBig(b, '#1', '', 'of 1. Congratulations'));
+  add(9, 2, 'Your listener ranking', 'among users of this dashboard', (b) => dBig(b, '#1', '', 'of 1. It was not close'));
   add(9, 3, 'Probability the next play is music', 'not a podcast', (b) => {
     const music = total / (total + Math.max(1, S.podcastMs));
     dMeter(b, music, pct1(music) + '. The forecast is songs');
