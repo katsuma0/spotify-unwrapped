@@ -1,9 +1,26 @@
 # unwrapped: Spotify listening stats
 
-Web prototype. Drop in the data export Spotify emails you (the zip as-is, or the
-`.json` files inside it) and get a stats dashboard. Everything runs client-side.
-No server, no upload, single `index.html` with zero dependencies (zip extraction
-uses the browser's native `DecompressionStream`).
+Web prototype, built mobile-first as the base for a future iOS app. Drop in the
+data export Spotify emails you (the zip as-is, or the `.json` files inside it)
+and get a stats dashboard. Everything runs client-side. No server, no upload,
+single `index.html` with zero dependencies (zip extraction uses the browser's
+native `DecompressionStream`).
+
+## Features
+
+- Hero totals, streams, artists, tracks, active days, skip rate, podcast time
+- Listening personality: classifies you as one of seven archetypes (Devotee,
+  Explorer, Night Owl, Weekender, Nine to Fiver, Podcast Person, All-Rounder)
+  from your real patterns
+- How you listen: fresh finds vs comfort loops, shuffle share, after-dark and
+  early-hours shares
+- Listening over time, listening clock, day of week, top artists and tracks,
+  platforms, stat lines
+- Year filter chips (All time plus each year in your data)
+- Light and dark mode: tap the "unwrapped." title to switch, saved locally,
+  follows the system until you choose
+- Step-by-step in-app guide for requesting your data from Spotify, with iPhone
+  specifics (safe areas and touch targets are iOS-ready)
 
 ## Run it
 

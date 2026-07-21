@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Unwrapped — your listening, decoded</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="unwrapped">
+<title>unwrapped: your listening, decoded</title>
 <style>
   :root {
     color-scheme: light;
@@ -62,17 +66,27 @@
     --good:           #0ca30c;
   }
 
-  * { box-sizing: border-box; margin: 0; }
+  * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     background: var(--page);
     color: var(--ink);
     font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+  main {
+    max-width: 1080px; margin: 0 auto;
+    padding: 16px max(20px, env(safe-area-inset-left)) calc(60px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-right));
+    padding-top: calc(16px + env(safe-area-inset-top));
+  }
 
-  header.site { padding: 28px 0 8px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  header.site { padding: 20px 0 8px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .logo {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    border: none; background: none; color: var(--ink); padding: 4px 6px; margin: -4px -6px; border-radius: 8px;
+  }
+  .logo:active { opacity: .6; }
   .logo .dot { color: var(--accent-deep); }
   .tagline { color: var(--ink-2); font-size: 14px; }
 
@@ -94,7 +108,8 @@
   .btnrow { margin-top: 22px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   button.primary, button.ghost {
     font: 600 14px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
-    border-radius: 10px; padding: 12px 18px; cursor: pointer; border: 1px solid transparent;
+    border-radius: 10px; padding: 12px 18px; min-height: 44px; cursor: pointer; border: 1px solid transparent;
+    touch-action: manipulation;
   }
   button.primary { background: var(--ink); color: var(--page); }
   button.primary:hover { opacity: .85; }
@@ -105,7 +120,7 @@
   .personas { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
   .plabel { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
   .pchips { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; max-width: 820px; margin: 0 auto; }
-  button.pchip { text-align: left; background: transparent; border: 1px solid var(--baseline); border-radius: 10px; padding: 10px 12px; cursor: pointer; color: var(--ink); font: inherit; }
+  button.pchip { text-align: left; background: transparent; border: 1px solid var(--baseline); border-radius: 10px; padding: 10px 12px; min-height: 44px; cursor: pointer; color: var(--ink); font: inherit; touch-action: manipulation; }
   button.pchip:hover { border-color: var(--accent-deep); }
   .pchip .pn { font-weight: 650; font-size: 13.5px; }
   .pchip .pd { color: var(--muted); font-size: 12px; margin-top: 2px; }
@@ -122,16 +137,23 @@
   #dash { display: none; }
   #dash.on { display: block; }
 
-  .rangebar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 26px 0 18px; color: var(--ink-2); font-size: 14px; }
+  .rangebar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 22px 0 14px; color: var(--ink-2); font-size: 14px; }
   .rangebar .pill { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink-2); }
   .rangebar button { margin-left: auto; }
+  .ychips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  button.ychip {
+    font: 600 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink-2); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 9px 14px; min-height: 36px; cursor: pointer; touch-action: manipulation;
+  }
+  button.ychip.on { color: var(--ink); border-color: var(--accent-deep); font-weight: 700; }
 
   .hero {
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
     padding: 34px 30px; margin-bottom: 14px;
   }
   .hero .label { color: var(--ink-2); font-size: 14px; }
-  .hero .big { font-size: 58px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-top: 2px; }
+  .hero .big { font-size: clamp(40px, 9vw, 58px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-top: 2px; }
   .hero .big small { font-size: 26px; font-weight: 600; color: var(--ink-2); letter-spacing: 0; margin-left: 6px; }
   .hero .sub { color: var(--ink-2); margin-top: 8px; }
   .hero .sub b { color: var(--ink); font-weight: 650; }
@@ -162,6 +184,7 @@
   .rrow .val { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
   @media (max-width: 560px) { .rrow { grid-template-columns: 18px minmax(90px, 130px) 1fr max-content; } }
 
+  #trendChart, #hourChart, #dowChart { overflow-x: auto; }
   svg text { font: 11.5px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
   svg .vlabel { fill: var(--ink-2); font-weight: 600; }
 
@@ -188,13 +211,22 @@
 
   footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; }
   footer a { color: var(--muted); }
+
+  @media (max-width: 560px) {
+    #drop { padding: 36px 16px; }
+    .hero { padding: 24px 20px; }
+    .card { padding: 18px 16px 14px; }
+    .tile { padding: 13px 14px; }
+    .tile .value { font-size: 22px; }
+    .rangebar button { margin-left: 0; }
+  }
 </style>
 </head>
 <body>
 <main>
   <header class="site">
-    <div class="logo">unwrapped<span class="dot">.</span></div>
-    <div class="tagline">your listening history, decoded. Runs entirely in your browser, nothing leaves your device</div>
+    <button class="logo" id="themeBtn" type="button" aria-label="Switch between light and dark mode">unwrapped<span class="dot">.</span></button>
+    <div class="tagline">your listening history, decoded. Nothing leaves your device. Tap the title to switch light and dark.</div>
   </header>
 
   <section id="intro">
@@ -214,11 +246,13 @@
     <div id="status" role="status"></div>
 
     <div class="howto">
-      <b>Don’t have your export yet?</b>
+      <b>How to get your file from Spotify</b> (one time, then you own your data)
       <ol>
-        <li>Go to <a href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener">spotify.com/account/privacy</a> and sign in.</li>
-        <li>Under “Download your data”, request <b>Account data</b> (arrives in ~5 days) or <b>Extended streaming history</b> (up to 30 days, but covers your whole account lifetime).</li>
-        <li>When the email arrives, download the zip and drop it above. No unzipping needed.</li>
+        <li>Open <a href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener">spotify.com/account/privacy</a> in any browser and sign in. From the Spotify app: tap your profile picture, then Settings and privacy, then Account, then Privacy settings; it opens the same page.</li>
+        <li>Scroll to <b>Download your data</b> and tick what you want. <b>Extended streaming history</b> is the good one: your whole account lifetime, every play. <b>Account data</b> only covers the last year but arrives faster.</li>
+        <li>Tap <b>Request data</b>, then confirm in the email Spotify sends you right away.</li>
+        <li>Wait for the “your data is ready” email (about 5 days for Account data, up to 30 for Extended). Download <b>my_spotify_data.zip</b> from the link. On iPhone it lands in the Files app, in Downloads.</li>
+        <li>Come back here, tap <b>Choose file</b> above, and pick that zip. No unzipping, no uploading; it is read on your device.</li>
       </ol>
     </div>
   </section>
@@ -229,11 +263,13 @@
       <span class="pill" id="rangePill"></span>
       <button class="ghost" id="resetBtn">Load different data</button>
     </div>
+    <div class="ychips" id="yearChips"></div>
 
     <div class="hero">
       <div class="label">Total listening time</div>
       <div class="big"><span id="heroHours"></span><small>hours</small></div>
       <div class="sub" id="heroSub"></div>
+      <div class="sub" id="heroPersona"></div>
     </div>
 
     <div class="tiles" id="tiles"></div>
@@ -269,6 +305,12 @@
         <div class="cardsub">Minutes by weekday</div>
         <div id="dowChart"></div>
       </div>
+    </div>
+
+    <div class="card">
+      <h3>How you listen</h3>
+      <div class="cardsub">The shape of your habits, not just the totals</div>
+      <div class="rlist" id="vibesList"></div>
     </div>
 
     <div class="card">
@@ -409,7 +451,7 @@ function classifyAndNormalize(name, json) {
       if (r.episode_name) {
         plays.push({ t, ms, track: null, artist: null, album: null, platform: r.platform || null, skipped: !!r.skipped, podcast: { show: r.episode_show_name || 'Unknown show', ep: r.episode_name } });
       } else if (r.master_metadata_track_name) {
-        plays.push({ t, ms, track: r.master_metadata_track_name, artist: r.master_metadata_album_artist_name || 'Unknown artist', album: r.master_metadata_album_album_name || null, platform: r.platform || null, skipped: r.skipped === true, podcast: null });
+        plays.push({ t, ms, track: r.master_metadata_track_name, artist: r.master_metadata_album_artist_name || 'Unknown artist', album: r.master_metadata_album_album_name || null, platform: r.platform || null, skipped: r.skipped === true, shuffle: typeof r.shuffle === 'boolean' ? r.shuffle : null, podcast: null });
       }
     }
     return plays.length ? { kind: 'extended', plays } : null;
@@ -421,7 +463,7 @@ function classifyAndNormalize(name, json) {
       if (!r || !r.endTime) continue;
       const t = new Date(r.endTime.replace(' ', 'T'));  // "YYYY-MM-DD HH:MM"
       if (isNaN(t)) continue;
-      plays.push({ t, ms: r.msPlayed || 0, track: r.trackName || 'Unknown track', artist: r.artistName || 'Unknown artist', album: null, platform: null, skipped: null, podcast: null });
+      plays.push({ t, ms: r.msPlayed || 0, track: r.trackName || 'Unknown track', artist: r.artistName || 'Unknown artist', album: null, platform: null, skipped: null, shuffle: null, podcast: null });
     }
     return plays.length ? { kind: 'simple', plays } : null;
   }
@@ -505,6 +547,8 @@ function computeStats(plays) {
     byHour: new Array(24).fill(0), byDow: new Array(7).fill(0),
     byPlatform: new Map(),
     skippable: 0, skips: 0,
+    shuffleStreams: 0, shuffleKnown: 0,
+    freshStreams: 0, repeatStreams: 0,
     dayTrackMax: { count: 0 }, first: null, last: null,
     hasSkipData: false, hasPlatform: false,
   };
@@ -530,6 +574,14 @@ function computeStats(plays) {
     t.ms += p.ms; if (isPlay) t.plays++;
     if (p.t < t.first) t.first = p.t;
     S.byTrack.set(tKey, t);
+    if (isPlay) {
+      if (t.plays === 1) S.freshStreams++;   // first real play of this track
+      if (t.plays > 10) S.repeatStreams++;   // deep into repeat territory
+    }
+    if (p.shuffle !== null && p.shuffle !== undefined && isPlay) {
+      S.shuffleKnown++;
+      if (p.shuffle) S.shuffleStreams++;
+    }
 
     const dk = dayKey(p.t);
     S.byDay.set(dk, (S.byDay.get(dk) || 0) + p.ms);
@@ -596,17 +648,39 @@ function normalizePlatform(raw) {
 }
 
 /* ================= rendering ================= */
-let lastStats = null;
+let lastStats = null, allPlays = null, curYear = 'all';
 
 function renderDashboard(plays, meta) {
-  const S = computeStats(plays);
-  lastStats = S;
+  allPlays = plays;
   $('intro').style.display = 'none';
   $('dash').classList.add('on');
 
   const noteBits = ['Source: ' + meta.source + ' · ' + meta.filesRead + ' file' + (meta.filesRead > 1 ? 's' : '') + ' read'];
   if (meta.droppedSimple) noteBits.push('1-year package ignored (extended covers it)');
   $('sourceNote').textContent = noteBits.join(' · ');
+
+  // year filter chips
+  const years = [...new Set(plays.map(p => p.t.getFullYear()))].sort();
+  const chips = $('yearChips');
+  chips.innerHTML = '';
+  if (years.length > 1) {
+    for (const y of ['all', ...years]) {
+      const b = el('button', 'ychip', y === 'all' ? 'All time' : String(y));
+      b.type = 'button';
+      b.dataset.year = y;
+      b.addEventListener('click', () => applyYear(y));
+      chips.append(b);
+    }
+  }
+  applyYear('all');
+}
+
+function applyYear(sel) {
+  curYear = sel;
+  for (const b of $('yearChips').children) b.classList.toggle('on', String(b.dataset.year) === String(sel));
+  const plays = sel === 'all' ? allPlays : allPlays.filter(p => p.t.getFullYear() === sel);
+  const S = computeStats(plays);
+  lastStats = S;
   $('rangePill').textContent = S.first ? niceDate(S.first) + ' → ' + niceDate(S.last) : '';
 
   // hero
@@ -614,6 +688,8 @@ function renderDashboard(plays, meta) {
   const nonstopDays = (S.totalMs / 86400000).toFixed(1);
   const perDay = S.spanDays ? Math.round(S.totalMs / 60000 / S.spanDays) : 0;
   $('heroSub').innerHTML = 'That’s <b>' + nonstopDays + ' days</b> of nonstop music, about <b>' + perDay + ' minutes</b> every day across ' + fmtInt(S.spanDays) + ' days.';
+  const [pName, pDesc] = personality(S);
+  $('heroPersona').innerHTML = 'Listening personality: <b>' + pName + '</b>, ' + pDesc + '.';
 
   // tiles
   const tiles = [
@@ -645,8 +721,47 @@ function renderDashboard(plays, meta) {
     label: h % 3 === 0 ? String(h) : '', full: hourName(h), v: ms / 60000,
   })), { tipUnit: 'min' });
   renderColumns($('dowChart'), S.byDow.map((ms, i) => ({ label: DOWS[i], full: DOWS[i], v: ms / 60000 })), { tipUnit: 'min', wide: true });
+  renderVibes(S);
   renderFacts(S);
   renderPlatforms(S);
+}
+
+function personality(S) {
+  const total = S.totalMs || 1;
+  const top = S.topArtists[0];
+  const topShare = top ? top.ms / total : 0;
+  const top10 = S.topArtists.slice(0, 10).reduce((s, a) => s + a.ms, 0) / total;
+  const wknd = (S.byDow[4] + S.byDow[5] + S.byDow[6]) / total;             // Fri + Sat + Sun
+  const commute = (S.byHour[7] + S.byHour[8] + S.byHour[17] + S.byHour[18]) / total;
+  const weekday = (S.byDow[0] + S.byDow[1] + S.byDow[2] + S.byDow[3] + S.byDow[4]) / total;
+  if (S.podcastMs > total) return ['The Podcast Person', 'music is just the intermission'];
+  if (topShare > 0.25) return ['The Devotee', 'one artist rules them all'];
+  if (top10 < 0.2) return ['The Explorer', 'always chasing something new'];
+  if (S.nightShare > 0.18) return ['The Night Owl', 'the day starts at midnight'];
+  if (wknd > 0.6) return ['The Weekender', 'saves it all for the weekend'];
+  if (commute > 0.35 && weekday > 0.7) return ['The Nine to Fiver', 'commute-powered listening'];
+  return ['The All-Rounder', 'a balanced musical diet'];
+}
+
+function renderVibes(S) {
+  const total = S.totalMs || 1;
+  const nightMs = S.byHour[22] + S.byHour[23] + S.byHour[0] + S.byHour[1] + S.byHour[2] + S.byHour[3];
+  const morningMs = S.byHour[5] + S.byHour[6] + S.byHour[7] + S.byHour[8];
+  const rows = [
+    { n1: 'Fresh finds', n2: 'first-ever plays of a track', v: S.streams ? S.freshStreams / S.streams : 0,
+      tip: '<b>Fresh finds</b><br>' + fmtInt(S.freshStreams) + ' of ' + fmtInt(S.streams) + ' streams were a first play' },
+    { n1: 'Comfort loops', n2: 'plays of a track past its tenth', v: S.streams ? S.repeatStreams / S.streams : 0,
+      tip: '<b>Comfort loops</b><br>' + fmtInt(S.repeatStreams) + ' streams of songs you already knew by heart' },
+    { n1: 'After dark', n2: '10pm to 4am, share of time', v: nightMs / total,
+      tip: '<b>After dark</b><br>' + fmtDur(nightMs) + ' between 10pm and 4am' },
+    { n1: 'Early hours', n2: '5am to 9am, share of time', v: morningMs / total,
+      tip: '<b>Early hours</b><br>' + fmtDur(morningMs) + ' between 5am and 9am' },
+  ];
+  if (S.shuffleKnown > 0) {
+    rows.splice(2, 0, { n1: 'On shuffle', n2: 'streams with shuffle on', v: S.shuffleStreams / S.shuffleKnown,
+      tip: '<b>On shuffle</b><br>' + fmtInt(S.shuffleStreams) + ' of ' + fmtInt(S.shuffleKnown) + ' streams' });
+  }
+  renderRanked($('vibesList'), rows.map(r => ({ ...r, rank: '', val: fmtPct(r.v) })));
 }
 
 function hourName(h) { const ap = h < 12 ? 'am' : 'pm'; const hh = h % 12 === 0 ? 12 : h % 12; return hh + ap; }
@@ -675,7 +790,7 @@ function renderRanked(wrap, rows) {
 /* vertical columns (hour of day / weekday) */
 function renderColumns(wrap, data, opts = {}) {
   wrap.innerHTML = '';
-  const W = Math.max(280, wrap.clientWidth || 460), H = 190;
+  const W = Math.max(250, wrap.clientWidth || 460), H = 190;
   const padL = 6, padR = 6, padB = 22, padT = 18;
   const iw = W - padL - padR, ih = H - padT - padB;
   const n = data.length;
@@ -718,7 +833,7 @@ function renderTrend(S) {
   const vals = buckets.map(([k, ms]) => ({ k, v: useMonths ? ms / 3600000 : ms / 60000 }));
   if (vals.length < 2) { wrap.append(el('div', null, 'Not enough data for a trend yet.')); return; }
 
-  const W = Math.max(320, wrap.clientWidth || 900), H = 240;
+  const W = Math.max(260, wrap.clientWidth || 900), H = 240;
   const padL = 40, padR = 16, padT = 16, padB = 26;
   const iw = W - padL - padR, ih = H - padT - padB;
   const max = Math.max(...vals.map(d => d.v));
@@ -735,9 +850,10 @@ function renderTrend(S) {
   }
   // x labels (thinned)
   const every = Math.ceil(vals.length / (W < 600 ? 6 : 12));
+  const alwaysYear = useMonths && every >= 6; // sparse labels are ambiguous without the year
   vals.forEach((d, i) => {
     if (i % every !== 0 && i !== vals.length - 1) return;
-    svg.append(svgEl('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, trendLabel(d.k, useMonths, i === 0)));
+    svg.append(svgEl('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, trendLabel(d.k, useMonths, i === 0 || alwaysYear)));
   });
 
   const line = vals.map((d, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(d.v).toFixed(1)).join(' ');
@@ -1024,6 +1140,23 @@ function loadSample(key) {
 }
 
 /* ================= wiring ================= */
+const metaTheme = document.querySelector('meta[name="theme-color"]');
+function effectiveTheme() {
+  return document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+function applyTheme(t) {
+  if (t) document.documentElement.dataset.theme = t;
+  metaTheme.setAttribute('content', effectiveTheme() === 'dark' ? '#0d0d0d' : '#f9f9f7');
+}
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('unwrapped-theme'); } catch (e) {}
+applyTheme(savedTheme);
+$('themeBtn').addEventListener('click', () => {
+  const next = effectiveTheme() === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('unwrapped-theme', next); } catch (e) {}
+  applyTheme(next);
+});
+
 const drop = $('drop');
 $('pickBtn').addEventListener('click', (e) => { e.stopPropagation(); $('fileInput').click(); });
 drop.addEventListener('click', () => $('fileInput').click());
