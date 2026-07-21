@@ -737,7 +737,7 @@ function renderTrend(S) {
   const every = Math.ceil(vals.length / (W < 600 ? 6 : 12));
   vals.forEach((d, i) => {
     if (i % every !== 0 && i !== vals.length - 1) return;
-    svg.append(svgEl('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, trendLabel(d.k, useMonths)));
+    svg.append(svgEl('text', { x: X(i), y: H - 6, 'text-anchor': 'middle' }, trendLabel(d.k, useMonths, i === 0)));
   });
 
   const line = vals.map((d, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(d.v).toFixed(1)).join(' ');
@@ -772,7 +772,7 @@ function renderTrend(S) {
   tt.append(table);
 }
 
-function trendLabel(k, m) { if (m) { const [y, mo] = k.split('-'); return MONTHS[+mo - 1] + (mo === '01' ? ' ’' + y.slice(2) : ''); } return k.slice(5); }
+function trendLabel(k, m, withYear) { if (m) { const [y, mo] = k.split('-'); return MONTHS[+mo - 1] + ((withYear || mo === '01') ? ' ’' + y.slice(2) : ''); } return k.slice(5); }
 function trendLabelLong(k, m) { if (m) { const [y, mo] = k.split('-'); return MONTHS[+mo - 1] + ' ' + y; } const d = new Date(k + 'T12:00:00'); return niceDate(d); }
 function rowEl(cellTag, cells) { const tr = el('tr'); for (const c of cells) tr.append(el(cellTag, null, c)); return tr; }
 function niceCeil(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 1.5, 2, 3, 4, 5, 6, 8, 10]) { if (m * p >= v) return m * p; } return 10 * p; }
@@ -1052,16 +1052,19 @@ addEventListener('drop', (e) => {
   if (files.length) handleFiles(files);
 });
 
-let resizeTimer = null;
-addEventListener('resize', () => {
-  if (!lastStats || !$('dash').classList.contains('on')) return;
+function rerenderCharts() {
+  renderTrend(lastStats);
+  renderColumns($('hourChart'), lastStats.byHour.map((ms, h) => ({ label: h % 3 === 0 ? String(h) : '', full: hourName(h), v: ms / 60000 })), { tipUnit: 'min' });
+  renderColumns($('dowChart'), lastStats.byDow.map((ms, i) => ({ label: DOWS[i], full: DOWS[i], v: ms / 60000 })), { tipUnit: 'min', wide: true });
+}
+let resizeTimer = null, lastChartW = 0;
+new ResizeObserver((entries) => {
+  const w = entries[0].contentRect.width;
+  if (!lastStats || !$('dash').classList.contains('on') || Math.abs(w - lastChartW) < 4) return;
+  lastChartW = w;
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    renderTrend(lastStats);
-    renderColumns($('hourChart'), lastStats.byHour.map((ms, h) => ({ label: h % 3 === 0 ? String(h) : '', full: hourName(h), v: ms / 60000 })), { tipUnit: 'min' });
-    renderColumns($('dowChart'), lastStats.byDow.map((ms, i) => ({ label: DOWS[i], full: DOWS[i], v: ms / 60000 })), { tipUnit: 'min', wide: true });
-  }, 150);
-});
+  resizeTimer = setTimeout(rerenderCharts, 120);
+}).observe($('trendChart'));
 </script>
 </body>
 </html>
