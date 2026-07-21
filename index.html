@@ -261,8 +261,13 @@
     background: var(--page); border: 1px solid var(--baseline); border-radius: 10px; padding: 10px 12px; min-height: 44px; flex: 1; min-width: 120px;
   }
   .wordform input:focus { outline: 2px solid var(--accent-deep); border-color: transparent; }
-  .finale { text-align: center; padding: 46px 20px; }
-  .finale .bignum { margin-top: 10px; }
+  .finale { text-align: center; padding: 26px 20px 6px; }
+  .secrows { display: grid; grid-template-columns: 30px 1fr; gap: 2px 8px; align-items: center; margin-top: 4px; }
+  .seclabel { color: var(--muted); font-size: 10px; text-align: right; font-variant-numeric: tabular-nums; }
+  .sectrack { height: 5px; }
+  .secbar { height: 5px; background: var(--accent); border-radius: 0 2px 2px 0; }
+  .madeby { margin-top: 10px; }
+  .madeby a { color: var(--ink-2); font-weight: 650; }
 
   footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; }
   footer a { color: var(--muted); }
@@ -381,15 +386,14 @@
     </div>
 
     <div class="deephead" id="deepAnchor">
-      <h2>The deep end</h2>
-      <p>101 statistics nobody asked for, dealt at random from a vault of <span id="deepCount">many</span>. It starts normal. It does not stay normal.</p>
-      <div class="btnrow"><button class="ghost" id="shuffleBtn">Shuffle the deep end</button></div>
+      <div class="btnrow"><button class="ghost" id="shuffleBtn">Shuffle</button></div>
     </div>
     <div id="deepList"></div>
   </section>
 
   <footer>
-    A personal-stats prototype, v0.6. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
+    A personal-stats prototype, v0.7. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
+    <div class="madeby">Created by <a href="https://katsuma0.github.io" target="_blank" rel="noopener">Katsuma Onishi</a></div>
   </footer>
 </main>
 
@@ -1075,6 +1079,24 @@ function computeDeep(plays, S) {
   for (const hd of ['1-1', '2-14', '4-1', '7-1', '10-31', '12-24', '12-25', '12-31']) D.holiday.set(hd, { n: 0, tracks: new Map() });
   D.allStreams = [];
   D.cumMarks = {}; let cumMs = 0;
+  D.trackSkips = new Map(); D.firstSkipped = new Set();
+  D.sesCount = 0; D.sesMsSum = 0; D.sessionFirst = new Map();
+  D.skipFree = { cur: 0, max: 0 };
+  D.encoreDays = 0; D.offenderDays = 0; D.maxArtistsDay = { n: 0 };
+  D.maxHourBlock = { ms: 0 }; D.maxWeek = { ms: 0 };
+  D.maxRun = { len: 0 };
+  D.artistMarks = new Map(); const artistCum = new Map();
+  D.firstOfYear = new Map(); D.albumMs = new Map();
+  const seenOnce = new Set();
+  let dayFirstTrack = null, dayArtists = new Set(), dayTrackCounts = new Map();
+  let curHourKey = null, curHourMs = 0, curWeekKey = null, curWeekMs = 0;
+  let atSessionStart = true;
+  const commitDay = (dk) => {
+    if (dayFirstTrack && dayFirstTrack === lastTrackToday) D.encoreDays++;
+    for (const c of dayTrackCounts.values()) if (c >= 3) { D.offenderDays++; break; }
+    if (dayArtists.size > D.maxArtistsDay.n) D.maxArtistsDay = { n: dayArtists.size, day: dk };
+    dayArtists = new Set(); dayTrackCounts = new Map(); dayFirstTrack = null;
+  };
 
   const MILE = [1, 100, 1000, 5000, 10000, 25000, 50000, 100000];
   let streamNo = 0, prev = null, lastDayKey = null, lastTrackToday = null;
@@ -1084,6 +1106,7 @@ function computeDeep(plays, S) {
   const endSession = (endT) => {
     if (!sesStart) return;
     const dur = endT - sesStart;
+    D.sesCount++; D.sesMsSum += dur;
     if (dur >= 3 * 3600000) D.session.marathons++;
     if (!D.session.best || dur > D.session.best.dur) D.session.best = { dur, tracks: sesTracks, start: sesStart };
   };
@@ -1129,6 +1152,19 @@ function computeDeep(plays, S) {
         if (cumMs < mark * 3600000 && cumMs + p.ms >= mark * 3600000) D.cumMarks[mark] = p.t;
       }
       cumMs += p.ms;
+      const ac = artistCum.get(p.artist) || 0;
+      for (const amk of [10, 25, 50, 100, 250]) {
+        const at = amk * 3600000;
+        if (ac < at && ac + p.ms >= at) {
+          if (!D.artistMarks.has(p.artist)) D.artistMarks.set(p.artist, []);
+          D.artistMarks.get(p.artist).push([amk, p.t]);
+        }
+      }
+      artistCum.set(p.artist, ac + p.ms);
+      const yr = p.t.getFullYear();
+      if (!D.firstOfYear.has(yr)) D.firstOfYear.set(yr, [p.t, tKey]);
+      dayArtists.add(p.artist); bump(dayTrackCounts, tKey);
+      if (atSessionStart) { bump(D.sessionFirst, tKey); atSessionStart = false; }
       const ph = moonPhase(p.t.getTime());
       D.moon[ph] += p.ms;
       if (ph === 4) bump(D.moonFullTracks, tKey);
@@ -1149,6 +1185,7 @@ function computeDeep(plays, S) {
         if (!D.albumTracks.has(p.album)) D.albumTracks.set(p.album, new Set());
         D.albumTracks.get(p.album).add(p.track);
         bump(D.albumStreams, p.album);
+        bump(D.albumMs, p.album, p.ms);
       }
       if (p.platform) {
         const y = p.t.getFullYear();
@@ -1157,6 +1194,9 @@ function computeDeep(plays, S) {
       }
     }
     if (p.skipped !== null && p.skipped !== undefined) {
+      if (!seenOnce.has(tKey)) { seenOnce.add(tKey); if (p.skipped) D.firstSkipped.add(tKey); }
+      if (p.skipped) { bump(D.trackSkips, tKey); D.skipFree.cur = 0; }
+      else { D.skipFree.cur++; if (D.skipFree.cur > D.skipFree.max) D.skipFree.max = D.skipFree.cur; }
       const li = letterIdx(p.track);
       if (li >= 0) { D.letterSkip[li].n++; if (p.skipped) D.letterSkip[li].s++; }
       if (p.shuffle === true) { D.shufSkip.n++; if (p.skipped) D.shufSkip.s++; }
@@ -1180,22 +1220,42 @@ function computeDeep(plays, S) {
         D._loop = (D._loop || 1) + 1;
         if (D._loop > D.maxLoop.len) D.maxLoop = { len: D._loop, track: p.track, artist: p.artist, when: p.t };
       } else D._loop = 1;
-      if (gap > 30 * 60000) { endSession(new Date(prev.t.getTime() + prev.ms)); sesStart = p.t; sesMs = 0; sesTracks = 0; }
+      if (gap > 30 * 60000) { endSession(new Date(prev.t.getTime() + prev.ms)); sesStart = p.t; sesMs = 0; sesTracks = 0; atSessionStart = true; }
     } else sesStart = p.t;
     sesMs += p.ms; if (isPlay) sesTracks++;
     if (p.artist === runArtist) runLen++;
-    else { if (runArtist !== null) { D.runs.count++; D.runs.tracks += runLen; } runArtist = p.artist; runLen = 1; }
+    else { if (runArtist !== null) { D.runs.count++; D.runs.tracks += runLen; if (runLen > D.maxRun.len) D.maxRun = { len: runLen, artist: runArtist }; } runArtist = p.artist; runLen = 1; }
     const dk = dayKey(p.t);
     if (dk !== lastDayKey) {
       if (lastTrackToday) bump(D.nightcap, lastTrackToday);
-      if (isPlay) bump(D.alarm, tKey);
+      if (lastDayKey) commitDay(lastDayKey);
+      if (isPlay) { bump(D.alarm, tKey); dayFirstTrack = tKey; }
       lastDayKey = dk;
-    }
+    } else if (isPlay && !dayFirstTrack) dayFirstTrack = tKey;
     if (isPlay) lastTrackToday = tKey;
+    const hbk = dk + '|' + h;
+    if (hbk !== curHourKey) {
+      if (curHourMs > D.maxHourBlock.ms) D.maxHourBlock = { ms: curHourMs, key: curHourKey };
+      curHourKey = hbk; curHourMs = 0;
+    }
+    curHourMs += p.ms;
+    const wdt = new Date(p.t); wdt.setHours(0, 0, 0, 0); wdt.setDate(wdt.getDate() - ((wdt.getDay() + 6) % 7));
+    const wkk = dayKey(wdt);
+    if (wkk !== curWeekKey) {
+      if (curWeekMs > D.maxWeek.ms) D.maxWeek = { ms: curWeekMs, key: curWeekKey };
+      curWeekKey = wkk; curWeekMs = 0;
+    }
+    curWeekMs += p.ms;
     prev = p;
   }
-  if (prev) { endSession(new Date(prev.t.getTime() + prev.ms)); if (lastTrackToday) bump(D.nightcap, lastTrackToday); }
-  if (runArtist !== null) { D.runs.count++; D.runs.tracks += runLen; }
+  if (prev) {
+    endSession(new Date(prev.t.getTime() + prev.ms));
+    if (lastTrackToday) bump(D.nightcap, lastTrackToday);
+    if (lastDayKey) commitDay(lastDayKey);
+    if (curHourMs > D.maxHourBlock.ms) D.maxHourBlock = { ms: curHourMs, key: curHourKey };
+    if (curWeekMs > D.maxWeek.ms) D.maxWeek = { ms: curWeekMs, key: curWeekKey };
+  }
+  if (runArtist !== null) { D.runs.count++; D.runs.tracks += runLen; if (runLen > D.maxRun.len) D.maxRun = { len: runLen, artist: runArtist }; }
 
   // unique-track pass
   D.longTitle = null; D.shortTitle = null;
@@ -1284,6 +1344,7 @@ function computeDeep(plays, S) {
       D.annivBest = { track: tk, md, years: set.size };
     }
   }
+  D.lastPlay = lastSeen;
   D.minuteMod60 = new Array(60).fill(0);
   for (let i = 0; i < 1440; i++) D.minuteMod60[i % 60] += D.minuteOfDay[i];
   D.oneBite = 0; D.albumsTouched = 0;
@@ -1379,6 +1440,7 @@ function buildPool(S, D) {
   const titleOf = (tk) => { const t = S.byTrack.get(tk); return t ? t.name : tk.split('\u001f')[0]; };
   const topTrackOf = (map) => { const t = topOf(map); return t ? { label: nameOf(t[0]), short: titleOf(t[0]), n: t[1] } : null; };
   const rint = (n) => Math.floor(Math.random() * n);
+  const pickSome = (arr, k) => arr.map(x => [x, Math.random()]).sort((q, r) => q[1] - r[1]).slice(0, k).map(x => x[0]);
 
   const P = [];
   let famTag = null;
@@ -1574,9 +1636,6 @@ function buildPool(S, D) {
   });
   add(4, 3, 'Punctuation party', 'streams by mark', (b) => dCols(b, Object.entries(D.punct).map(([k, v]) => ({ label: k, full: 'Titles with ' + k, v })), { wide: true, tipUnit: 'streams' }));
   add(4, 3, 'The (feat.) economy', 'titles with a plus-one in parentheses', (b) => dMeter(b, D.parens / streams, pct1(D.parens / streams) + ' of your streams'));
-  add(4, 3, 'CAPS vs lowercase', 'shouting vs whispering titles', (b) => {
-    dCols(b, [{ label: 'CAPS', full: 'ALL CAPS titles', v: D.caps }, { label: 'lower', full: 'all lowercase titles', v: D.lower }], { wide: true, tipUnit: 'streams' });
-  });
   add(4, 4, 'The color wheel', 'colors in your titles', (b) => {
     const top = [...D.colorHits.entries()].sort((a, c) => c[1] - a[1]).slice(0, 6);
     dRank(b, top.map(([w, n], i) => ({ rank: i + 1, n1: w, n2: '', v: n, val: fmtInt(n) + '×', tip: '<b>' + esc(w) + '</b><br>' + fmtInt(n) + ' streams' })));
@@ -1593,24 +1652,6 @@ function buildPool(S, D) {
     const t = topOf(D.nameHits);
     dBig(b, fmtInt([...D.nameHits.values()].reduce((a, c) => a + c, 0)), 'streams', 'most serenaded: <b>' + esc(t[0]) + '</b>');
   }, () => D.nameHits.size);
-  add(4, 3, 'The bedtime audit', 'tell us your bedtime', (b) => {
-    const input = el('input'); input.type = 'time'; input.value = '23:00';
-    const res = el('div');
-    const go = () => {
-      res.innerHTML = '';
-      const [hh, mm] = (input.value || '23:00').split(':').map(Number);
-      const bed = hh * 60 + mm;
-      let after = 0;
-      for (const p of curPlays) {
-        if (p.podcast || p.ms < 30000) continue;
-        const mod = p.t.getHours() * 60 + p.t.getMinutes();
-        if (mod >= bed || mod < 300) after++;
-      }
-      dSentence(res, '<b>' + fmtInt(after) + ' streams</b> after your alleged bedtime. The bedtime is a lie.');
-    };
-    dForm(b, input, 'Audit me', go, res);
-    go();
-  });
   add(4, 3, 'First word census', '', (b) => {
     const t = topOf(D.firstWord);
     dSentence(b, 'Most common opening word: "<b>' + esc(t[0]) + '</b>" (' + fmtInt(t[1]) + ' streams).' + (t[0] === 'i' ? ' It really is all about you.' : ''));
@@ -1665,18 +1706,6 @@ function buildPool(S, D) {
       })(info), ((h) => () => h.n > 0)(info));
     }
   });
-  fam('letter', () => {
-    const LETTERS_AVAIL = D.artistLetter.map((v, i) => v > 0 ? i : -1).filter(i => i >= 0);
-    for (let k = 0; k < Math.min(8, LETTERS_AVAIL.length); k++) {
-      const li = LETTERS_AVAIL[rint(LETTERS_AVAIL.length)];
-      const L = String.fromCharCode(65 + li);
-      add(5, 2, 'Filed under ' + L, 'artists starting with ' + L, ((letter, idx) => (b) => {
-        let n = 0, best = null;
-        for (const a of S.byArtist.values()) if (letterIdx(a.name) === idx) { n++; if (!best || a.ms > best.ms) best = a; }
-        dBig(b, fmtInt(n), 'artists', best ? 'led by <b>' + esc(best.name) + '</b>' : '');
-      })(L, li));
-    }
-  });
 
   /* ===== tier 5: nobody asked ===== */
   add(6, 3, 'Accidental anniversaries', 'a legally binding ritual', (b) => {
@@ -1718,7 +1747,7 @@ function buildPool(S, D) {
     dForm(b, input, 'Cut the letters', go, res);
   });
   fam('exactly', () => {
-    for (const n of [2, 3, 7]) {
+    for (const n of pickSome([2, 3, 4, 5, 6, 7, 8, 9, 11, 13], 3)) {
       add(6, 2, 'Played exactly ' + n + ' times', 'artists, not more, not less', ((k) => (b) => {
         const c = [...S.byArtist.values()].filter(a => a.plays === k).length;
         dBig(b, fmtInt(c), 'artists', 'a very specific level of interest');
@@ -1726,7 +1755,7 @@ function buildPool(S, D) {
     }
   });
   fam('stuck', () => {
-    for (const n of [10, 25, 50]) {
+    for (const n of pickSome([10, 15, 20, 25, 30, 40, 50, 75], 3)) {
       add(6, 2, 'Stuck at ' + n + ' plays', 'tracks, exactly', ((k) => (b) => {
         const c = [...S.byTrack.values()].filter(t => t.plays === k).length;
         dBig(b, fmtInt(c), 'tracks', 'frozen at a round number');
@@ -1735,8 +1764,20 @@ function buildPool(S, D) {
   });
 
   /* ===== tier 6: forensic ===== */
-  add(7, 6, 'The second hand', 'which second you press play on', (b) => {
-    dCols(b, D.secs.map((v, i) => ({ label: i % 10 === 0 ? String(i) : '', full: 'Second ' + i, v })), { tiny: true, tipUnit: 'streams' });
+  add(7, 2, 'The second hand', 'the second you press play on', (b) => {
+    const max = Math.max(...D.secs, 1);
+    const grid = el('div', 'secrows');
+    D.secs.forEach((v, i) => {
+      grid.append(el('div', 'seclabel', i % 10 === 0 ? ':' + i : ''));
+      const cell = el('div', 'sectrack');
+      const bar = el('div', 'secbar');
+      bar.style.width = Math.max(1, v / max * 100) + '%';
+      cell.append(bar);
+      cell.addEventListener('mousemove', (e) => showTip('<b>:' + String(i).padStart(2, '0') + '</b><br>' + fmtInt(v) + ' streams', e.clientX, e.clientY));
+      cell.addEventListener('mouseleave', hideTip);
+      grid.append(cell);
+    });
+    b.append(grid);
   }, () => D.hasSeconds);
   add(7, 2, 'Palindrome o’clock', '12:21, 13:31, and friends', (b) => {
     const f = topTrackOf(D.palinFav);
@@ -1746,7 +1787,7 @@ function buildPool(S, D) {
   add(7, 2, 'Friday the 13th', 'survival log', (b) => dBig(b, fmtInt(D.fri13), 'streams', D.fri13 ? 'survived every one' : 'never risked it'));
   add(7, 2, 'February 29', 'a day that mostly does not exist', (b) => dBig(b, fmtInt(D.leap), 'streams', D.leap ? 'attendance on a fake day' : 'you refuse to acknowledge it'));
   fam('mmclub', () => {
-    for (const mm of [7, 11, 13, 22, 33, 44, 55]) {
+    for (const mm of pickSome([3, 7, 11, 13, 17, 22, 27, 33, 38, 44, 51, 55], 3)) {
       add(7, 2, 'The :' + String(mm).padStart(2, '0') + ' club', 'streams starting at minute ' + mm, ((k) => (b) => {
         dBig(b, fmtInt(D.minuteMod60[k]), 'streams', 'membership was automatic');
       })(mm));
@@ -1768,24 +1809,11 @@ function buildPool(S, D) {
       })(mark));
     }
   });
-  add(8, 2, 'Your favorite second', 'of any minute', (b) => {
-    let best = 0; D.secs.forEach((v, i) => { if (v > D.secs[best]) best = i; });
-    dBig(b, ':' + String(best).padStart(2, '0'), '', fmtInt(D.secs[best]) + ' presses. Nobody knows why');
-  }, () => D.hasSeconds);
   add(8, 6, 'The last-letter alphabet', 'first letters were taken', (b) => dAlphabet(b, D.lastLetter));
-  add(8, 2, 'The bigram elite', 'top two-letter title opening', (b) => {
-    const m = new Map();
-    for (const t of S.byTrack.values()) { const pre = lettersOnly(t.name).slice(0, 2); if (pre.length === 2) bump(m, pre, t.plays); }
-    const t = topOf(m);
-    dBig(b, t[0].toUpperCase(), '', fmtInt(t[1]) + ' streams open with these two letters');
-  }, () => S.byTrack.size > 5);
   add(8, 3, 'Longest artist name', '', (b) => {
     let best = null;
     for (const a of S.byArtist.values()) if (!best || (a.name || '').length > best.name.length) best = a;
     dSentence(b, '<b>' + esc(best.name) + '</b>: ' + best.name.length + ' characters, ' + fmtInt(best.plays) + ' plays. Every keystroke earned.');
-  });
-  add(8, 2, 'Palindromic names', 'reads the same both ways', (b) => {
-    dBig(b, fmtInt(D.palinNames.length), 'found', D.palinNames[0] ? 'including <b>' + esc(D.palinNames[0].what) + '</b>' : 'your library only goes forwards');
   });
 
   /* ===== tier 7: the joke drawer ===== */
@@ -1794,7 +1822,6 @@ function buildPool(S, D) {
     dRank(b, [{ rank: 1, n1: a.name, n2: '', v: 1, val: fmtDur(a.ms), tip: '<b>' + esc(a.name) + '</b><br>the only bar' }]);
     dSentence(b, 'One bar. It won.');
   });
-  add(9, 2, 'Moons consulted', 'for the moon phase chart', (b) => dBig(b, '1', 'moon', 'we only have the one'));
   add(9, 2, 'Your listener ranking', 'among users of this dashboard', (b) => dBig(b, '#1', '', 'of 1. It was not close'));
   add(9, 3, 'Probability the next play is music', 'not a podcast', (b) => {
     const music = total / (total + Math.max(1, S.podcastMs));
@@ -1806,12 +1833,104 @@ function buildPool(S, D) {
   });
   add(10, 3, 'Streams that started before they ended', 'chronology check', (b) => dMeter(b, 1, '100%. Physics remains undefeated.'));
   add(10, 2, 'February 30 activity', 'a perfect record', (b) => dBig(b, '0', 'streams', 'flawless attendance on a day that has never existed'));
-  add(10, 2, 'Average songs per song', 'normalized', (b) => dBig(b, '1.0', '', 'remarkably consistent'));
-  add(10, 3, 'Bars to the left of each bar', 'a self-portrait', (b) => {
-    dCols(b, [0, 1, 2, 3, 4].map(i => ({ label: String(i), full: 'Bar ' + (i + 1), v: i })), { wide: true, tipUnit: 'bars' });
+  /* ===== the requested cuts ===== */
+  add(2, 2, 'Longest streak', 'days in a row with music', (b) => dBig(b, fmtInt(S.streak.len), 'days', shortDate(S.streak.start) + ' to ' + shortDate(S.streak.end)), () => S.streak.len >= 3);
+  add(2, 3, 'Day zero', 'the first entry in the ledger', (b) => {
+    const s0 = D.allStreams[0];
+    dSentence(b, '<b>' + esc(nameOf(s0[1])) + '</b>, ' + niceDate(new Date(s0[0])) + '. It all starts somewhere.');
+  }, () => D.allStreams.length);
+  add(2, 2, 'The average sitting', '', (b) => dBig(b, fmtDur(D.sesMsSum / D.sesCount), '', 'across ' + fmtInt(D.sesCount) + ' sessions'), () => D.sesCount > 5);
+  add(2, 2, 'Songs per day', 'on days you showed up', (b) => dBig(b, (S.streams / Math.max(1, S.days.length)).toFixed(1), 'songs', ''));
+  add(3, 2, 'Your biggest week', '', (b) => dBig(b, fmtHours(D.maxWeek.ms), 'hours', 'week of ' + shortDate(D.maxWeek.key)), () => D.maxWeek.key);
+  add(3, 2, 'Your loudest month', 'the historic maximum', (b) => {
+    const mx = S.months.reduce((m, x) => x[1] > m[1] ? x : m);
+    dBig(b, fmtHours(mx[1]), 'hours', trendLabelLong(mx[0], true));
+  }, () => S.months.length > 1);
+  add(3, 2, 'The century club', 'tracks with 100 or more plays', (b) => {
+    const n = [...S.byTrack.values()].filter(t => t.plays >= 100).length;
+    dBig(b, fmtInt(n), 'tracks', n ? '' : 'the door remains closed');
   });
-  add(10, 2, 'The quietest artist', 'in your entire library', (b) => dSentence(b, '<b>Silence</b>. Zero plays. Still undefeated.'));
-  add(10, 2, 'This space', '', (b) => dSentence(b, 'Intentionally left blank, except for this sentence explaining that.'));
+  add(3, 3, 'The halfway point', 'half your listening happened before this date', (b) => {
+    let cum = 0; const half = S.totalMs / 2; let hd = null;
+    for (const [dk2, ms] of S.days) { cum += ms; if (cum >= half) { hd = dk2; break; } }
+    dSentence(b, '<b>' + niceDate(new Date(hd + 'T12:00:00')) + '</b>. Everything since has been the second half.');
+  }, () => S.days.length > 10);
+  add(3, 2, 'The workhorse', 'most time, not most plays', (b) => {
+    const t = [...S.byTrack.values()].sort((a, c) => c.ms - a.ms)[0];
+    dBig(b, fmtDur(t.ms), '', '<b>' + esc(t.name) + '</b>');
+  }, () => S.byTrack.size);
+  add(4, 3, 'The nemesis', 'the song you skip the most', (b) => {
+    let best = null;
+    for (const [tk, sk] of D.trackSkips) { const t = S.byTrack.get(tk); if (t && sk >= 5 && (!best || sk > best.sk)) best = { t, sk }; }
+    dSentence(b, 'You have skipped <b>' + esc(best.t.name) + '</b> ' + fmtInt(best.sk) + ' times and still have not removed it.');
+  }, () => hasSkip && [...D.trackSkips.values()].some(v => v >= 5));
+  add(4, 3, 'The loyalty test', 'many plays, zero skips', (b) => {
+    const hit = [...S.byTrack.entries()].filter(([tk, t]) => t.plays >= 20 && !D.trackSkips.get(tk)).sort((a, c) => c[1].plays - a[1].plays)[0];
+    dSentence(b, '<b>' + esc(hit[1].name) + '</b>: ' + fmtInt(hit[1].plays) + ' plays, never skipped. Not once.');
+  }, () => hasSkip && [...S.byTrack.entries()].some(([tk, t]) => t.plays >= 20 && !D.trackSkips.get(tk)));
+  add(4, 2, 'Second chances', 'skipped on first listen, loved anyway', (b) => {
+    const n = [...D.firstSkipped].filter(tk => (S.byTrack.get(tk) || {}).plays >= 10).length;
+    dBig(b, fmtInt(n), 'songs', 'you were wrong about at first');
+  }, () => hasSkip && D.firstSkipped.size);
+  add(4, 2, 'Skip-free streak', 'consecutive plays without a skip', (b) => dBig(b, fmtInt(D.skipFree.max), 'plays', ''), () => hasSkip && D.skipFree.max > 10);
+  add(4, 2, 'Platform loyalty', '', (b) => {
+    const rows = [...S.byPlatform.entries()].sort((a, c) => c[1] - a[1]);
+    dMeter(b, rows[0][1] / total, pct1(rows[0][1] / total) + ' on ' + esc(rows[0][0]));
+  }, () => S.hasPlatform && S.byPlatform.size);
+  add(4, 2, 'Podcast detour', 'time not spent on music', (b) => dBig(b, fmtHours(S.podcastMs), 'hours', 'of people talking'), () => S.podcastMs > 3600000);
+  add(4, 2, 'The opener', 'how your sessions begin', (b) => {
+    const t = topTrackOf(D.sessionFirst);
+    dBig(b, fmtInt(t.n), 'sessions', 'opened by <b>' + esc(t.short) + '</b>');
+  }, () => D.sessionFirst.size);
+  add(5, 2, 'The encore pattern', 'first and last song of the day, the same', (b) => dBig(b, fmtInt(D.encoreDays), 'days', 'ended where they began'), () => D.encoreDays > 0);
+  add(5, 2, 'Repeat offender days', 'some song played 3 or more times', (b) => dMeter(b, D.offenderDays / Math.max(1, S.days.length), pct1(D.offenderDays / Math.max(1, S.days.length)) + ' of your active days'), () => S.days.length);
+  add(5, 3, 'Your most crowded day', 'different artists, one day', (b) => {
+    dSentence(b, '<b>' + fmtInt(D.maxArtistsDay.n) + ' artists</b> on ' + niceDate(new Date(D.maxArtistsDay.day + 'T12:00:00')) + '. A festival nobody attended but you.');
+  }, () => D.maxArtistsDay.n > 3 && D.maxArtistsDay.day);
+  add(5, 2, 'Your loudest hour', 'one clock hour, one day', (b) => {
+    const [dk2, hh2] = D.maxHourBlock.key.split('|');
+    dBig(b, fmtDur(D.maxHourBlock.ms), '', hourName(+hh2) + ', ' + niceDate(new Date(dk2 + 'T12:00:00')));
+  }, () => D.maxHourBlock.key);
+  add(5, 2, 'The longest run', 'same artist, back to back', (b) => dBig(b, fmtInt(D.maxRun.len), 'songs', 'of uninterrupted <b>' + esc(D.maxRun.artist) + '</b>'), () => D.maxRun.len >= 5);
+  add(5, 2, 'Meteors', 'burned bright, burned out', (b) => {
+    let n = 0;
+    for (const [tk, t] of S.byTrack) if (t.plays >= 15 && (D.lastPlay.get(tk) - t.first) < 60 * 86400000) n++;
+    dBig(b, fmtInt(n), 'tracks', '15+ plays, all inside 60 days, then nothing');
+  }, () => S.byTrack.size > 20);
+  add(5, 2, 'Deep cuts', 'the part of your library you barely touched', (b) => {
+    const n = [...S.byTrack.values()].filter(t => t.plays <= 2).length;
+    dMeter(b, n / Math.max(1, S.byTrack.size), pct1(n / Math.max(1, S.byTrack.size)) + ' of your tracks got 2 plays or fewer');
+  }, () => S.byTrack.size > 20);
+  add(5, 3, 'The question you ask most', '', (b) => {
+    const t = [...S.byTrack.values()].filter(x => (x.name || '').includes('?')).sort((a, c) => c.plays - a.plays)[0];
+    dSentence(b, '<b>' + esc(t.name) + '</b>, asked ' + fmtInt(t.plays) + ' times. Still no answer.');
+  }, () => [...S.byTrack.values()].some(x => (x.name || '').includes('?')));
+  add(5, 2, 'Longest word streamed', '', (b) => {
+    let best = '';
+    for (const t of S.byTrack.values()) for (const w of words(t.name)) if (w.length > best.length) best = w;
+    dBig(b, String(best.length), 'letters', '"' + esc(best) + '"');
+  }, () => S.byTrack.size);
+  add(6, 3, 'Album of the hours', 'most time inside one album', (b) => {
+    const t2 = topOf(D.albumMs);
+    dSentence(b, '<b>' + esc(t2[0]) + '</b>: ' + fmtDur(t2[1]) + '. You live there.');
+  }, () => D.albumMs.size);
+  fam('artistmark', () => {
+    for (const aTop of S.topArtists.slice(0, 3)) {
+      const marks = D.artistMarks.get(aTop.name) || [];
+      if (!marks.length) continue;
+      const [amk, when] = marks[rint(marks.length)];
+      add(3, 3, 'Hour ' + fmtInt(amk) + ' with ' + aTop.name, 'a milestone nobody announced', ((mmk, w2, a2) => (b) => {
+        dSentence(b, 'You crossed <b>' + fmtInt(mmk) + ' hours</b> of ' + esc(a2) + ' on <b>' + niceDate(w2) + '</b>. There was no ceremony.');
+      })(amk, when, aTop.name));
+    }
+  });
+  fam('nyfirst', () => {
+    for (const [yr, first] of D.firstOfYear) {
+      add(4, 3, 'First song of ' + yr, '', ((w2, tk2, y2) => (b) => {
+        dSentence(b, '<b>' + esc(nameOf(tk2)) + '</b>, ' + niceDate(w2) + '. ' + y2 + ' had a tone from day one.');
+      })(first[0], first[1], yr));
+    }
+  });
 
   return P;
 }
@@ -1851,16 +1970,14 @@ function dealDeep() {
   if (pumpTimer) { clearTimeout(pumpTimer); pumpTimer = null; }
 
   const pool = buildPool(S, D).filter(e => { try { return !e.avail || e.avail(); } catch (err) { return false; } });
-  $('deepCount').textContent = pool.length;
-  const FAM_CAP = { weekday: 3, month: 4, word: 4, pairs: 2, holiday: 3, letter: 3, exactly: 2, stuck: 2, mmclub: 2, streamno: 2, cummark: 2 };
   const famSeen = {};
   const shuffled = pool.map(e => ({ e, k: Math.random() })).sort((a, b) => a.k - b.k).map(x => x.e);
   const picked = [];
   for (const e of shuffled) {
     if (picked.length >= 101) break;
     if (e.fam) {
-      famSeen[e.fam] = (famSeen[e.fam] || 0) + 1;
-      if (famSeen[e.fam] > (FAM_CAP[e.fam] || 3)) continue;
+      if (famSeen[e.fam]) continue;   // one per family, no repeats in a deal
+      famSeen[e.fam] = 1;
     }
     picked.push(e);
   }
@@ -1899,18 +2016,11 @@ function dealDeep() {
   for (let k = 0; k < 10 && fillQueue.length; k++) fillCard(fillQueue.shift());
   pumpTimer = setTimeout(pumpFills, 30);
 
-  const fin = el('div', 'card dcard sp6 finale');
-  fin.append(el('div', 'cardsub', 'THE BOTTOM'));
-  fin.append(el('h3', null, 'You actually made it.'));
-  fin.append(el('div', 'bignum', fmtInt(picked.length)));
-  fin.append(el('div', 'bigsub', 'stats deep, dealt from a vault of ' + fmtInt(pool.length) + '. Shuffle for a fresh hand; the vault goes deeper than the page.'));
-  const row = el('div', 'btnrow');
-  const again = el('button', 'primary', 'Deal 101 new stats');
-  again.addEventListener('click', () => { dealDeep(); $('deepAnchor').scrollIntoView({ behavior: 'smooth' }); });
+  const fin = el('div', 'finale sp6');
+  fin.style.gridColumn = 'span 6';
   const up = el('button', 'ghost', 'Back to the surface');
   up.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-  row.append(again, up);
-  fin.append(row);
+  fin.append(up);
   wrap.append(fin);
 }
 
