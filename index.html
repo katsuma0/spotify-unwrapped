@@ -184,8 +184,9 @@
   .rrow .val { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
   @media (max-width: 560px) { .rrow { grid-template-columns: 18px minmax(90px, 130px) 1fr max-content; } }
 
-  #trendChart, #hourChart, #dowChart { overflow-x: auto; }
+  #trendChart, #hourChart, #dowChart, .colwrap { overflow-x: auto; }
   svg text { font: 11.5px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
+  svg.tiny text { font-size: 9px; }
   svg .vlabel { fill: var(--ink-2); font-weight: 600; }
 
   details.tbl { margin-top: 10px; }
@@ -208,6 +209,60 @@
     max-width: 240px; box-shadow: 0 4px 14px rgba(0,0,0,.25);
   }
   #tooltip b { font-weight: 650; }
+
+  /* the deep end */
+  .deephead { margin: 44px 0 14px; text-align: center; }
+  .deephead h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .deephead p { color: var(--ink-2); margin-top: 4px; }
+  .deephead .btnrow { margin-top: 14px; }
+  #deepList {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 14px;
+    grid-auto-flow: dense;
+  }
+  #deepList > .card { margin: 0; min-width: 0; }
+  .dcard { content-visibility: auto; }
+  .sp2 { grid-column: span 2; contain-intrinsic-size: auto 190px; }
+  .sp3 { grid-column: span 3; contain-intrinsic-size: auto 210px; }
+  .sp4 { grid-column: span 4; contain-intrinsic-size: auto 250px; }
+  .sp6 { grid-column: span 6; contain-intrinsic-size: auto 280px; }
+  @media (max-width: 900px) {
+    .sp2 { grid-column: span 3; }
+    .sp4 { grid-column: span 6; }
+  }
+  @media (max-width: 600px) {
+    .sp2, .sp3, .sp4, .sp6 { grid-column: span 6; }
+  }
+  .dcard h3 { font-size: 15px; }
+  .dcard .cardsub { margin-bottom: 12px; }
+  .dcard { display: flex; flex-direction: column; }
+  .dcard > div:last-child { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .bignum { font-size: clamp(34px, 7vw, 46px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 6px 0 2px; }
+  .bignum small { font-size: 18px; font-weight: 600; color: var(--ink-2); margin-left: 4px; letter-spacing: 0; }
+  .bigsub { color: var(--ink-2); font-size: 13.5px; }
+  .sentence { color: var(--ink-2); font-size: 15px; }
+  .sentence b { color: var(--ink); font-weight: 650; }
+  .sentence + .sentence { margin-top: 8px; }
+  .meterwrap { margin: 10px 0 4px; }
+  .meterbar { height: 14px; border-radius: 0 4px 4px 0; background: var(--accent); min-width: 3px; }
+  .metertrack { background: color-mix(in oklab, var(--accent) 18%, var(--surface)); border-radius: 0 4px 4px 0; }
+  .meternote { color: var(--ink-2); font-size: 13px; margin-top: 6px; }
+  .podium { display: flex; align-items: flex-end; gap: 10px; margin-top: 14px; }
+  .pod { flex: 1; text-align: center; min-width: 0; }
+  .pod .podbar { background: var(--accent); border-radius: 4px 4px 0 0; margin: 6px auto 0; width: 100%; max-width: 120px; }
+  .pod.p1 .podbar { height: 92px; } .pod.p2 .podbar { height: 64px; } .pod.p3 .podbar { height: 44px; }
+  .pod .podname { font-weight: 650; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pod .podval { color: var(--ink-2); font-size: 12.5px; }
+  .pod .podrank { color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .06em; }
+  .wordform { display: flex; gap: 8px; margin: 10px 0 14px; flex-wrap: wrap; }
+  .wordform input[type="text"], .wordform input[type="time"] {
+    font: 15px system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink);
+    background: var(--page); border: 1px solid var(--baseline); border-radius: 10px; padding: 10px 12px; min-height: 44px; flex: 1; min-width: 120px;
+  }
+  .wordform input:focus { outline: 2px solid var(--accent-deep); border-color: transparent; }
+  .finale { text-align: center; padding: 46px 20px; }
+  .finale .bignum { margin-top: 10px; }
 
   footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; }
   footer a { color: var(--muted); }
@@ -324,10 +379,17 @@
       <div class="cardsub">Share of listening time by platform</div>
       <div class="rlist" id="platformList"></div>
     </div>
+
+    <div class="deephead" id="deepAnchor">
+      <h2>The deep end</h2>
+      <p>101 statistics nobody asked for, dealt at random from a vault of <span id="deepCount">many</span>. It starts normal. It does not stay normal.</p>
+      <div class="btnrow"><button class="ghost" id="shuffleBtn">Shuffle the deep end</button></div>
+    </div>
+    <div id="deepList"></div>
   </section>
 
   <footer>
-    A personal-stats prototype. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
+    A personal-stats prototype, v0.5.0. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
   </footer>
 </main>
 
@@ -351,6 +413,7 @@ function fmtDur(ms) {
 const fmtHours = (ms) => fmtInt(ms / 3600000);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOWS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const tkey = (track, artist) => track + '\u001f' + artist;
 const dayKey = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 const monthKey = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 function niceDate(d) { return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); }
@@ -569,7 +632,7 @@ function computeStats(plays) {
     a.ms += p.ms; if (isPlay) a.plays++;
     S.byArtist.set(aKey, a);
 
-    const tKey = p.track + ' ' + p.artist;
+    const tKey = tkey(p.track, p.artist);
     const t = S.byTrack.get(tKey) || { name: p.track, artist: p.artist, ms: 0, plays: 0, first: p.t };
     t.ms += p.ms; if (isPlay) t.plays++;
     if (p.t < t.first) t.first = p.t;
@@ -600,7 +663,7 @@ function computeStats(plays) {
       S.byPlatform.set(plat, (S.byPlatform.get(plat) || 0) + p.ms);
     }
     if (isPlay) {
-      const dtk = dk + ' ' + tKey;
+      const dtk = dk + '\u001f' + tKey;
       const c = (dayTrack.get(dtk) || 0) + 1;
       dayTrack.set(dtk, c);
       if (c > S.dayTrackMax.count) S.dayTrackMax = { count: c, track: p.track, artist: p.artist, day: dk };
@@ -724,6 +787,9 @@ function applyYear(sel) {
   renderVibes(S);
   renderFacts(S);
   renderPlatforms(S);
+  curPlays = plays;
+  curDeep = computeDeep(plays, S);
+  dealDeep();
 }
 
 function personality(S) {
@@ -795,10 +861,11 @@ function renderColumns(wrap, data, opts = {}) {
   const iw = W - padL - padR, ih = H - padT - padB;
   const n = data.length;
   const gap = 2;
-  const bw = Math.min(opts.wide ? 34 : 24, (iw - gap * (n - 1)) / n);
+  const bw = Math.max(1, Math.min(opts.wide ? 34 : 24, (iw - gap * (n - 1)) / n));
   const step = iw / n;
   const max = Math.max(...data.map(d => d.v), 1);
   const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+  if (opts.tiny) svg.classList.add('tiny');
 
   // baseline
   svg.append(svgEl('line', { x1: padL, y1: H - padB + .5, x2: W - padR, y2: H - padB + .5, stroke: 'var(--baseline)', 'stroke-width': 1 }));
@@ -952,7 +1019,901 @@ function renderPlatforms(S) {
   })));
 }
 
-/* ================= sample data: persona listeners ================= */
+/* ================= the deep end ================= */
+let curPlays = [], curDeep = null;
+
+const SCRABBLE = { a: 1, b: 3, c: 3, d: 2, e: 1, f: 4, g: 2, h: 4, i: 1, j: 8, k: 5, l: 1, m: 3, n: 1, o: 1, p: 3, q: 10, r: 1, s: 1, t: 1, u: 1, v: 4, w: 4, x: 8, y: 4, z: 10 };
+const STOP = new Set(['the', 'a', 'an', 'of', 'in', 'on', 'to', 'and', 'you', 'me', 'my', 'your', 'it', 'is', 'for', 'with', 'at', 'we', 'be', 'do', 'no', 'not', 'so', 'up', 'out', 'all', 'this', 'that', 'de', 'la', 'el', 'en', 'di', 'da', 'u', 'ur', 'im', 'dont', 'aint']);
+const COLOR_WORDS = ['red', 'blue', 'black', 'white', 'gold', 'golden', 'green', 'pink', 'purple', 'silver', 'gray', 'grey', 'orange', 'yellow', 'violet', 'scarlet', 'crimson', 'brown'];
+const BODY_WORDS = ['heart', 'hearts', 'eyes', 'eye', 'head', 'hands', 'hand', 'hair', 'lips', 'bones', 'blood', 'skin', 'teeth', 'tongue', 'knees', 'feet', 'face', 'arms', 'body'];
+const WEATHER_WORDS = ['sun', 'sunshine', 'rain', 'storm', 'thunder', 'lightning', 'snow', 'ice', 'fire', 'wind', 'cloud', 'clouds', 'sky', 'fog', 'hurricane', 'heat', 'cold'];
+const NAME_WORDS = ['maria', 'john', 'jude', 'caroline', 'jolene', 'diana', 'roxanne', 'layla', 'angie', 'valerie', 'delilah', 'rhiannon', 'jack', 'diane', 'sarah', 'emily', 'anna', 'marie', 'johnny', 'stan', 'iris', 'daisy', 'ruby', 'alice', 'stella', 'eileen', 'cecilia', 'gloria', 'mia', 'luna', 'romeo', 'juliet', 'kim', 'beth', 'amy', 'sue', 'peggy', 'lola', 'rita', 'jessie', 'billie', 'jane'];
+const MOON_NAMES = ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'];
+
+function words(s) { return (s || '').toLowerCase().replace(/[^a-z0-9à-ÿ’']+/gi, ' ').trim().split(/\s+/).filter(Boolean).map(w => w.replace(/[’']/g, '')); }
+function lettersOnly(s) { return (s || '').toLowerCase().replace(/[^a-z]/g, ''); }
+function letterIdx(s) { const c = (s || '').toUpperCase().charCodeAt(0); return c >= 65 && c <= 90 ? c - 65 : -1; }
+function moonPhase(t) { const syn = 29.53058867; const days = t / 86400000 - Date.UTC(2000, 0, 6, 18, 14) / 86400000; const ph = ((days % syn) + syn) % syn; return Math.floor(ph / syn * 8 + 0.5) % 8; }
+function fmtClock(h, m) { const ap = h < 12 ? 'am' : 'pm'; const hh = h % 12 === 0 ? 12 : h % 12; return hh + ':' + String(m).padStart(2, '0') + ap; }
+function fmtSec(ms) { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function bump(map, key, by = 1) { map.set(key, (map.get(key) || 0) + by); }
+function topOf(map) { let bk = null, bv = -1; for (const [k, v] of map) if (v > bv) { bv = v; bk = k; } return bk === null ? null : [bk, bv]; }
+
+function computeDeep(plays, S) {
+  const music = plays.filter(p => !p.podcast);
+  const D = {};
+  const arr26 = () => new Array(26).fill(0);
+  D.artistLetter = arr26(); D.titleLetter = arr26(); D.albumLetter = arr26(); D.lastLetter = arr26();
+  D.letterSkip = Array.from({ length: 26 }, () => ({ s: 0, n: 0 }));
+  D.heat = Array.from({ length: 7 }, () => new Array(24).fill(0));
+  D.dom = new Array(31).fill(0);
+  D.secs = new Array(60).fill(0); D.hasSeconds = false;
+  D.moon = new Array(8).fill(0);
+  D.moonFullTracks = new Map();
+  D.minuteOfDay = new Array(1440).fill(0);
+  D.companyMs = 0; D.midnightExact = 0; D.midnightTracks = new Map();
+  D.palinTime = 0; D.palinFav = new Map(); D.topOfHour = 0;
+  D.fri13 = 0; D.leap = 0; D.dec25ms = 0; D.dec25Tracks = new Map();
+  D.threeAm = new Map(); D.straddlers = 0;
+  D.dejavu = 0; D.maxLoop = { len: 0 }; D.instant = 0; D.instantTracks = new Map();
+  D.alarm = new Map(); D.nightcap = new Map();
+  D.bailSecs = new Array(60).fill(0); D.bailTimes = [];
+  D.shufSkip = { s: 0, n: 0 }; D.manSkip = { s: 0, n: 0 };
+  D.contagion = { exposedS: 0, exposedN: 0, pairs: 0 };
+  D.silence = { ms: 0 }; D.session = { best: null, marathons: 0 };
+  D.comeback = { days: 0 }; D.milestones = [];
+  D.anniv = new Map(); D.runs = { count: 0, tracks: 0 };
+  D.albumTracks = new Map(); D.albumStreams = new Map();
+  D.yearPlat = new Map(); D.sub30Ms = 0;
+  D.nightLen = { sum: 0, n: 0 }; D.dayLen = { sum: 0, n: 0 };
+  D.listenLens = [];
+  D.dowTrack = Array.from({ length: 7 }, () => new Map());
+  D.hourTrack = Array.from({ length: 24 }, () => new Map());
+  D.monthArtist = Array.from({ length: 12 }, () => new Map());
+  D.seasonMs = [0, 0, 0, 0]; D.seasonArtist = Array.from({ length: 4 }, () => new Map());
+  D.holiday = new Map(); // 'M-D' -> {n, tracks}
+  for (const hd of ['1-1', '2-14', '4-1', '7-1', '10-31', '12-24', '12-25', '12-31']) D.holiday.set(hd, { n: 0, tracks: new Map() });
+  D.allStreams = [];
+  D.cumMarks = {}; let cumMs = 0;
+
+  const MILE = [1, 100, 1000, 5000, 10000, 25000, 50000, 100000];
+  let streamNo = 0, prev = null, lastDayKey = null, lastTrackToday = null;
+  let sesStart = null, sesMs = 0, sesTracks = 0, runArtist = null, runLen = 0;
+  const lastSeen = new Map();
+
+  const endSession = (endT) => {
+    if (!sesStart) return;
+    const dur = endT - sesStart;
+    if (dur >= 3 * 3600000) D.session.marathons++;
+    if (!D.session.best || dur > D.session.best.dur) D.session.best = { dur, tracks: sesTracks, start: sesStart };
+  };
+
+  for (const p of music) {
+    const isPlay = p.ms >= 30000;
+    const h = p.t.getHours(), m = p.t.getMinutes(), sec = p.t.getSeconds();
+    const dow = (p.t.getDay() + 6) % 7;
+    const tKey = tkey(p.track, p.artist);
+
+    D.heat[dow][h] += p.ms;
+    if (p.ms < 30000) D.sub30Ms += p.ms;
+    if (isPlay) {
+      streamNo++;
+      const mi = MILE.indexOf(streamNo);
+      if (mi >= 0) D.milestones.push({ n: streamNo, track: p.track, artist: p.artist, date: p.t });
+      D.listenLens.push(p.ms);
+      let li = letterIdx(p.artist); if (li >= 0) D.artistLetter[li]++;
+      li = letterIdx(p.track); if (li >= 0) D.titleLetter[li]++;
+      li = letterIdx(p.album); if (li >= 0) D.albumLetter[li]++;
+      const an = lettersOnly(p.artist); li = letterIdx(an.slice(-1)); if (li >= 0) D.lastLetter[li]++;
+      D.dom[p.t.getDate() - 1]++;
+      D.secs[sec]++; if (sec !== 0) D.hasSeconds = true;
+      D.minuteOfDay[h * 60 + m]++;
+      if (dow <= 4 && h >= 9 && h < 17) D.companyMs += p.ms;
+      if (h === 0 && m === 0) { D.midnightExact++; bump(D.midnightTracks, tKey); }
+      const hm = String(h).padStart(2, '0') + String(m).padStart(2, '0');
+      if (hm === [...hm].reverse().join('')) { D.palinTime++; bump(D.palinFav, tKey); }
+      if (m === 0 && sec === 0) D.topOfHour++;
+      if (dow === 4 && p.t.getDate() === 13) D.fri13++;
+      if (p.t.getMonth() === 1 && p.t.getDate() === 29) D.leap++;
+      if (p.t.getMonth() === 11 && p.t.getDate() === 25) { D.dec25ms += p.ms; bump(D.dec25Tracks, tKey); }
+      if (h === 3) bump(D.threeAm, tKey);
+      bump(D.dowTrack[dow], tKey);
+      bump(D.hourTrack[h], tKey);
+      bump(D.monthArtist[p.t.getMonth()], p.artist, p.ms);
+      const si = [3, 3, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3][p.t.getMonth()];
+      D.seasonMs[si] += p.ms; bump(D.seasonArtist[si], p.artist, p.ms);
+      const hol = D.holiday.get((p.t.getMonth() + 1) + '-' + p.t.getDate());
+      if (hol) { hol.n++; bump(hol.tracks, tKey); }
+      D.allStreams.push([p.t.getTime(), tKey]);
+      for (const mark of [100, 500, 1000, 2500]) {
+        if (cumMs < mark * 3600000 && cumMs + p.ms >= mark * 3600000) D.cumMarks[mark] = p.t;
+      }
+      cumMs += p.ms;
+      const ph = moonPhase(p.t.getTime());
+      D.moon[ph] += p.ms;
+      if (ph === 4) bump(D.moonFullTracks, tKey);
+      if (dayKey(p.t) !== dayKey(new Date(p.t.getTime() + p.ms))) D.straddlers++;
+      const tl = (p.track || '').length;
+      if (h < 4) { D.nightLen.sum += tl; D.nightLen.n++; } else if (h >= 9 && h < 21) { D.dayLen.sum += tl; D.dayLen.n++; }
+      const annKey = tKey + '|' + (p.t.getMonth() + 1) + '-' + p.t.getDate();
+      let aset = D.anniv.get(annKey);
+      if (!aset) { aset = new Set(); D.anniv.set(annKey, aset); }
+      aset.add(p.t.getFullYear());
+      const seen = lastSeen.get(tKey);
+      if (seen !== undefined) {
+        const gapD = (p.t - seen) / 86400000;
+        if (gapD > D.comeback.days) D.comeback = { days: Math.round(gapD), track: p.track, artist: p.artist, when: p.t };
+      }
+      lastSeen.set(tKey, p.t);
+      if (p.album) {
+        if (!D.albumTracks.has(p.album)) D.albumTracks.set(p.album, new Set());
+        D.albumTracks.get(p.album).add(p.track);
+        bump(D.albumStreams, p.album);
+      }
+      if (p.platform) {
+        const y = p.t.getFullYear();
+        if (!D.yearPlat.has(y)) D.yearPlat.set(y, new Map());
+        bump(D.yearPlat.get(y), normalizePlatform(p.platform), p.ms);
+      }
+    }
+    if (p.skipped !== null && p.skipped !== undefined) {
+      const li = letterIdx(p.track);
+      if (li >= 0) { D.letterSkip[li].n++; if (p.skipped) D.letterSkip[li].s++; }
+      if (p.shuffle === true) { D.shufSkip.n++; if (p.skipped) D.shufSkip.s++; }
+      if (p.shuffle === false) { D.manSkip.n++; if (p.skipped) D.manSkip.s++; }
+      if (p.skipped) {
+        const s = Math.min(59, Math.floor(p.ms / 1000));
+        D.bailSecs[s]++; D.bailTimes.push(p.ms);
+        if (p.ms < 3000) { D.instant++; bump(D.instantTracks, tKey); }
+      }
+    }
+    // sequence stats
+    if (prev) {
+      const gap = p.t - prev.t;
+      if (gap > (D.silence.ms || 0)) D.silence = { ms: gap, from: prev.t, to: p.t };
+      if (gap <= 10 * 60000 && prev.skipped !== null && p.skipped !== null) {
+        D.contagion.pairs++;
+        if (prev.skipped) { D.contagion.exposedN++; if (p.skipped) D.contagion.exposedS++; }
+      }
+      if (tkey(prev.track, prev.artist) === tKey && gap <= 20 * 60000) {
+        D.dejavu++;
+        D._loop = (D._loop || 1) + 1;
+        if (D._loop > D.maxLoop.len) D.maxLoop = { len: D._loop, track: p.track, artist: p.artist, when: p.t };
+      } else D._loop = 1;
+      if (gap > 30 * 60000) { endSession(new Date(prev.t.getTime() + prev.ms)); sesStart = p.t; sesMs = 0; sesTracks = 0; }
+    } else sesStart = p.t;
+    sesMs += p.ms; if (isPlay) sesTracks++;
+    if (p.artist === runArtist) runLen++;
+    else { if (runArtist !== null) { D.runs.count++; D.runs.tracks += runLen; } runArtist = p.artist; runLen = 1; }
+    const dk = dayKey(p.t);
+    if (dk !== lastDayKey) {
+      if (lastTrackToday) bump(D.nightcap, lastTrackToday);
+      if (isPlay) bump(D.alarm, tKey);
+      lastDayKey = dk;
+    }
+    if (isPlay) lastTrackToday = tKey;
+    prev = p;
+  }
+  if (prev) { endSession(new Date(prev.t.getTime() + prev.ms)); if (lastTrackToday) bump(D.nightcap, lastTrackToday); }
+  if (runArtist !== null) { D.runs.count++; D.runs.tracks += runLen; }
+
+  // unique-track pass
+  D.longTitle = null; D.shortTitle = null;
+  D.caps = 0; D.lower = 0; D.parens = 0; D.numbers = 0; D.question = 0; D.bang = 0;
+  D.wordFreq = new Map(); D.firstWord = new Map();
+  D.colorHits = new Map(); D.bodyHits = new Map(); D.weatherHits = new Map(); D.nameHits = new Map();
+  D.fiveLetter = 0; D.sameName = new Map(); D.allit = { streams: 0, ex: null };
+  D.eCount = 0; D.vowels = 0; D.letters = 0; D.mileage = 0;
+  D.titleLenSum = 0; D.palinNames = [];
+  D.punct = { '?': 0, '!': 0, '()': 0, '&': 0, '.': 0, ',': 0 };
+  for (const t of S.byTrack.values()) {
+    const w = t.plays; if (!t.name) continue;
+    const name = t.name;
+    const lets = lettersOnly(name);
+    if (!D.longTitle || name.length > D.longTitle.name.length) D.longTitle = t;
+    if (lets.length > 1 && (!D.shortTitle || name.length < D.shortTitle.name.length)) D.shortTitle = t;
+    if (lets.length >= 3 && name === name.toUpperCase() && /[A-Z]/.test(name)) D.caps += w;
+    if (lets.length >= 3 && name === name.toLowerCase() && /[a-z]/.test(name)) D.lower += w;
+    if (/[()]/.test(name)) { D.parens += w; D.punct['()'] += w; }
+    if (/\d/.test(name)) D.numbers += w;
+    if (name.includes('?')) { D.question += w; D.punct['?'] += w; }
+    if (name.includes('!')) { D.bang += w; D.punct['!'] += w; }
+    if (name.includes('&')) D.punct['&'] += w;
+    if (name.includes('.')) D.punct['.'] += w;
+    if (name.includes(',')) D.punct[','] += w;
+    const ws = words(name);
+    for (const word of ws) {
+      if (!STOP.has(word) && word.length > 1) bump(D.wordFreq, word, w);
+      if (COLOR_WORDS.includes(word)) bump(D.colorHits, word, w);
+      if (BODY_WORDS.includes(word)) bump(D.bodyHits, word, w);
+      if (WEATHER_WORDS.includes(word)) bump(D.weatherHits, word, w);
+      if (NAME_WORDS.includes(word)) bump(D.nameHits, word, w);
+    }
+    if (ws.length) bump(D.firstWord, ws[0], w);
+    if (ws.length === 1 && lets.length === 5) D.fiveLetter += w;
+    if (ws.length >= 2 && new Set(ws.map(x => x[0])).size === 1) { D.allit.streams += w; if (!D.allit.ex || w > D.allit.ex.plays) D.allit.ex = t; }
+    const low = name.toLowerCase().trim();
+    if (!D.sameName.has(low)) D.sameName.set(low, new Set());
+    D.sameName.get(low).add(t.artist);
+    D.eCount += (name.toLowerCase().match(/e/g) || []).length * w;
+    const v = (lets.match(/[aeiou]/g) || []).length;
+    D.vowels += v * w; D.letters += lets.length * w;
+    D.mileage += (name.length + (t.artist || '').length) * w;
+    D.titleLenSum += name.length * w;
+    if (lets.length >= 4 && lets === [...lets].reverse().join('')) D.palinNames.push({ what: name, plays: w });
+  }
+
+  // artist pass
+  D.theMs = 0; D.ampersand = 0; D.scrabble = null; D.funnel = [0, 0, 0, 0];
+  let entH = 0;
+  const totStreams = Math.max(1, S.streams);
+  for (const a of S.byArtist.values()) {
+    if ((a.name || '').startsWith('The ')) D.theMs += a.ms;
+    if (/( & | and )/i.test(a.name || '')) D.ampersand++;
+    if (a.plays >= 5) {
+      const sc = [...lettersOnly(a.name)].reduce((s, c) => s + (SCRABBLE[c] || 0), 0);
+      if (!D.scrabble || sc > D.scrabble.score) D.scrabble = { name: a.name, score: sc, plays: a.plays };
+    }
+    D.funnel[0]++;
+    if (a.plays >= 2) D.funnel[1]++;
+    if (a.plays >= 10) D.funnel[2]++;
+    if (a.plays >= 50) D.funnel[3]++;
+    const pr = a.plays / totStreams;
+    if (pr > 0) entH -= pr * Math.log2(pr);
+    const an = lettersOnly(a.name);
+    if (an.length >= 4 && an === [...an].reverse().join('')) D.palinNames.push({ what: a.name, plays: a.plays });
+  }
+  D.entropy = entH;
+
+  // aggregates
+  D.listenLens.sort((a, b) => a - b);
+  D.medianListen = D.listenLens.length ? D.listenLens[Math.floor(D.listenLens.length / 2)] : 0;
+  D.bailTimes.sort((a, b) => a - b);
+  D.halfLife = D.bailTimes.length ? D.bailTimes[Math.floor(D.bailTimes.length / 2)] : 0;
+  let bestMin = 0;
+  for (let i = 0; i < 1440; i++) if (D.minuteOfDay[i] > D.minuteOfDay[bestMin]) bestMin = i;
+  D.gloryMinute = bestMin;
+  // circular mean for chronotype
+  let sx = 0, sy = 0, sn = 0;
+  for (let i = 0; i < 1440; i++) { const a = i / 1440 * 2 * Math.PI; sx += Math.cos(a) * D.minuteOfDay[i]; sy += Math.sin(a) * D.minuteOfDay[i]; sn += D.minuteOfDay[i]; }
+  D.chronotype = sn ? ((Math.atan2(sy, sx) / (2 * Math.PI) + 1) % 1) * 1440 : 0;
+  D.annivBest = null;
+  for (const [k, set] of D.anniv) {
+    if (set instanceof Set && set.size >= 3 && (!D.annivBest || set.size > D.annivBest.years)) {
+      const [tk, md] = k.split('|');
+      D.annivBest = { track: tk, md, years: set.size };
+    }
+  }
+  D.minuteMod60 = new Array(60).fill(0);
+  for (let i = 0; i < 1440; i++) D.minuteMod60[i % 60] += D.minuteOfDay[i];
+  D.oneBite = 0; D.albumsTouched = 0;
+  for (const [alb, set] of D.albumTracks) { D.albumsTouched++; if (set.size === 1) D.oneBite++; }
+  return D;
+}
+
+/* ---------- deep-end renderers ---------- */
+function dBig(body, value, unit, sub) {
+  const n = el('div', 'bignum'); n.textContent = value;
+  if (unit) { const s = el('small', null, unit); n.append(s); }
+  body.append(n);
+  if (sub) { const d = el('div', 'bigsub'); d.innerHTML = sub; body.append(d); }
+}
+function dSentence(body, html) { const d = el('div', 'sentence'); d.innerHTML = html; body.append(d); }
+function dMeter(body, pct, note) {
+  const wrap = el('div', 'meterwrap');
+  const track = el('div', 'metertrack');
+  const bar = el('div', 'meterbar');
+  bar.style.width = Math.min(100, Math.max(0.5, pct * 100)) + '%';
+  track.append(bar); wrap.append(track); body.append(wrap);
+  if (note) { const d = el('div', 'meternote'); d.innerHTML = note; body.append(d); }
+}
+function dPodium(body, items) { // [{name, val}] ranked 1..3
+  const pod = el('div', 'podium');
+  const order = [1, 0, 2];
+  for (const i of order) {
+    if (!items[i]) continue;
+    const p = el('div', 'pod p' + (i + 1));
+    p.append(el('div', 'podrank', ['GOLD', 'SILVER', 'BRONZE'][i]), el('div', 'podname', items[i].name), el('div', 'podval', items[i].val), el('div', 'podbar'));
+    pod.append(p);
+  }
+  body.append(pod);
+}
+function dAlphabet(body, counts, opts = {}) {
+  const wrap = el('div', 'colwrap');
+  body.append(wrap);
+  renderColumns(wrap, counts.map((v, i) => ({ label: String.fromCharCode(65 + i), full: String.fromCharCode(65 + i), v })), { tiny: true, tipUnit: opts.unit || 'streams' });
+}
+function dHeat(body, grid) {
+  const wrap = el('div', 'colwrap'); body.append(wrap);
+  const RAMP = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
+  const W = Math.max(320, Math.min(body.clientWidth || 640, 900)), padL = 34, padT = 6, padB = 20;
+  const cw = (W - padL - 6) / 24, ch = 17;
+  const H = padT + ch * 7 + padB;
+  const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'tiny' });
+  let max = 0; grid.forEach(r => r.forEach(v => { if (v > max) max = v; }));
+  for (let d = 0; d < 7; d++) {
+    svg.append(svgEl('text', { x: padL - 6, y: padT + d * ch + ch / 2 + 3, 'text-anchor': 'end' }, DOWS[d]));
+    for (let h = 0; h < 24; h++) {
+      const v = grid[d][h];
+      const fill = v <= 0 ? 'var(--grid)' : RAMP[Math.min(6, Math.floor(v / max * 6.999))];
+      const r = svgEl('rect', { x: padL + h * cw + 1, y: padT + d * ch + 1, width: cw - 2, height: ch - 2, rx: 3, fill });
+      r.addEventListener('mousemove', (e) => showTip('<b>' + DOWS[d] + ' ' + hourName(h) + '</b><br>' + fmtDur(v), e.clientX, e.clientY));
+      r.addEventListener('mouseleave', hideTip);
+      svg.append(r);
+    }
+  }
+  for (let h = 0; h < 24; h += 3) svg.append(svgEl('text', { x: padL + h * cw + cw / 2, y: H - 6, 'text-anchor': 'middle' }, String(h)));
+  wrap.append(svg);
+}
+function dCols(body, data, opts = {}) {
+  const wrap = el('div', 'colwrap'); body.append(wrap);
+  renderColumns(wrap, data, opts);
+}
+function dRank(body, rows) {
+  const list = el('div', 'rlist'); body.append(list);
+  renderRanked(list, rows);
+}
+function dForm(body, inputEl, btnLabel, onGo, resultDiv) {
+  const form = el('div', 'wordform');
+  const btn = el('button', 'ghost', btnLabel);
+  btn.type = 'button';
+  btn.addEventListener('click', onGo);
+  inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') onGo(); });
+  form.append(inputEl, btn);
+  body.append(form, resultDiv);
+}
+
+/* ---------- the deep end: stat pool ---------- */
+const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DOWS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'];
+const HOLIDAY_NAMES = { '1-1': 'New Year’s Day', '2-14': 'Valentine’s Day', '4-1': 'April Fools', '7-1': 'Canada Day', '10-31': 'Halloween', '12-24': 'Christmas Eve', '12-25': 'Christmas Day', '12-31': 'New Year’s Eve' };
+let dealCount = 0;
+
+function buildPool(S, D) {
+  const total = Math.max(1, S.totalMs);
+  const streams = Math.max(1, S.streams);
+  const hasSkip = S.hasSkipData && S.skippable > 20;
+  const pct1 = (x) => (x * 100).toFixed(1) + '%';
+  const nameOf = (tk) => { const t = S.byTrack.get(tk); return t ? t.name + ' by ' + t.artist : tk.replace('\u001f', ' by '); };
+  const titleOf = (tk) => { const t = S.byTrack.get(tk); return t ? t.name : tk.split('\u001f')[0]; };
+  const topTrackOf = (map) => { const t = topOf(map); return t ? { label: nameOf(t[0]), short: titleOf(t[0]), n: t[1] } : null; };
+  const rint = (n) => Math.floor(Math.random() * n);
+
+  const P = [];
+  let famTag = null;
+  const add = (w, sz, t, s, r, avail) => P.push({ w, sz, t, s, r, avail, fam: famTag });
+  const fam = (name, fn) => { famTag = name; fn(); famTag = null; };
+
+  /* ===== tier 1: the normal ones ===== */
+  add(1, 6, 'The artist alphabet', 'streams by first letter', (b) => dAlphabet(b, D.artistLetter));
+  add(1, 6, 'The heatmap', 'every hour, on the record', (b) => {
+    dHeat(b, D.heat);
+    let bd = 0, bh = 0; D.heat.forEach((row, d) => row.forEach((v, h) => { if (v > D.heat[bd][bh]) { bd = d; bh = h; } }));
+    dSentence(b, 'Peak: <b>' + DOWS[bd] + ' ' + hourName(bh) + '</b>. That cell is between you and HR.');
+  });
+  add(1, 4, 'Daily dosage', 'listening days, by size', (b) => {
+    const buckets = [15, 30, 60, 90, 120, 180, 240, Infinity];
+    const labels = ['<15m', '30m', '1h', '1.5h', '2h', '3h', '4h', '4h+'];
+    const counts = new Array(buckets.length).fill(0);
+    for (const [, ms] of S.days) counts[buckets.findIndex(x => ms / 60000 < x)]++;
+    dCols(b, counts.map((v, i) => ({ label: labels[i], full: labels[i] + ' days', v })), { wide: true, tipUnit: 'days' });
+  });
+  add(1, 4, 'The lexicon', 'your most-streamed title words', (b) => {
+    const top = [...D.wordFreq.entries()].sort((a, c) => c[1] - a[1]).slice(0, 6);
+    dRank(b, top.map(([w, n], i) => ({ rank: i + 1, n1: w, n2: '', v: n, val: fmtInt(n) + '×', tip: '<b>' + esc(w) + '</b><br>' + fmtInt(n) + ' streams' })));
+  }, () => D.wordFreq.size > 0);
+  add(1, 2, 'Median listen', 'half your plays are shorter', (b) => dBig(b, fmtSec(D.medianListen), 'min', ''));
+  add(1, 2, 'Before noon', '', (b) => {
+    const am = S.byHour.slice(0, 12).reduce((a, c) => a + c, 0);
+    dMeter(b, am / total, pct1(am / total) + ' of your listening');
+  });
+  add(1, 2, 'Weekend share', 'Saturday and Sunday', (b) => {
+    const wk = S.byDow[5] + S.byDow[6];
+    dMeter(b, wk / total, pct1(wk / total) + ' of your listening');
+  });
+  add(2, 6, 'The title alphabet', 'same chart, different alphabet', (b) => dAlphabet(b, D.titleLetter));
+  add(2, 6, 'Useful conversions', 'your listening, in scientific units', (b) => {
+    const hrs = total / 3600000;
+    const tiles = [[fmtInt(hrs / 13.8), 'Toronto-Tokyo flights'], [fmtInt(total / 150000), 'popcorn cycles'], [fmtInt(hrs / 2.03), 'record marathons'], [(total / 86400000 / 29.53).toFixed(1), 'lunar cycles']];
+    const grid = el('div', 'tiles');
+    for (const [v, l] of tiles) { const t = el('div', 'tile'); t.append(el('div', 'value', v), el('div', 'label', l)); grid.append(t); }
+    b.append(grid);
+  });
+  add(2, 3, 'On company time', 'weekdays, nine to five', (b) => dMeter(b, D.companyMs / total, '<b>' + fmtHours(D.companyMs) + ' hours</b>, employer sponsored'));
+  add(2, 3, 'The quiet month', 'your historic minimum', (b) => {
+    const min = S.months.reduce((m, x) => x[1] < m[1] ? x : m);
+    dSentence(b, '<b>' + trendLabelLong(min[0], true) + '</b>: ' + fmtDur(min[1]) + '. One album and a change of heart.');
+  }, () => S.months.length > 1);
+  add(2, 2, 'Longest session', '', (b) => dBig(b, fmtDur(D.session.best.dur), '', fmtInt(D.session.best.tracks) + ' tracks, ' + niceDate(D.session.best.start)), () => D.session.best);
+  add(2, 2, 'Marathons', 'sessions over 3 hours', (b) => dBig(b, fmtInt(D.session.marathons), '', ''));
+  add(2, 2, 'First impressions graveyard', 'plays under 30 seconds', (b) => dBig(b, fmtHours(D.sub30Ms), 'hours', 'lost to sub-30s auditions'));
+  add(2, 3, 'The great silence', 'longest stretch of nothing', (b) => {
+    const days = D.silence.ms / 86400000;
+    dBig(b, days >= 2 ? String(Math.round(days)) : (D.silence.ms / 3600000).toFixed(1), days >= 2 ? 'days' : 'hours', niceDate(D.silence.from) + ' to ' + niceDate(D.silence.to) + '. Not asking.');
+  }, () => D.silence.from);
+  add(2, 6, 'The word detector', 'type a word, get the receipts', (b) => {
+    const input = el('input'); input.type = 'text'; input.placeholder = 'love, ghost, money...'; input.value = 'love';
+    const res = el('div');
+    const go = () => {
+      res.innerHTML = '';
+      const q = (input.value || '').trim().toLowerCase();
+      if (!q) return;
+      const hits = [...S.byTrack.values()].filter(t => (t.name || '').toLowerCase().includes(q)).sort((a, c) => c.plays - a.plays);
+      const n = hits.reduce((s, t) => s + t.plays, 0);
+      if (!hits.length) { dSentence(res, 'Zero titles contain "<b>' + esc(q) + '</b>". Innocent.'); return; }
+      dSentence(res, '<b>' + fmtInt(hits.length) + ' titles</b>, <b>' + fmtInt(n) + ' streams</b>, ' + pct1(n / streams) + ' of everything.');
+      const list = el('div', 'rlist'); list.style.marginTop = '12px'; res.append(list);
+      renderRanked(list, hits.slice(0, 5).map((t, i) => ({ rank: i + 1, n1: t.name, n2: t.artist, v: t.plays, val: fmtInt(t.plays) + '×', tip: '<b>' + esc(t.name) + '</b><br>' + fmtInt(t.plays) + ' plays' })));
+    };
+    dForm(b, input, 'Check', go, res);
+    go();
+  });
+  add(2, 3, 'Receipts', 'name your so-called favorite artist', (b) => {
+    const input = el('input'); input.type = 'text'; input.placeholder = 'artist name...';
+    const res = el('div');
+    const go = () => {
+      res.innerHTML = '';
+      const q = (input.value || '').trim().toLowerCase();
+      if (!q) return;
+      const idx = S.topArtists.findIndex(a => (a.name || '').toLowerCase().includes(q));
+      if (idx < 0) { dSentence(res, 'Never played them. Awkward.'); return; }
+      const a = S.topArtists[idx];
+      dSentence(res, '<b>' + esc(a.name) + '</b>: #' + (idx + 1) + ' of ' + fmtInt(S.topArtists.length) + '. ' + fmtDur(a.ms) + ', ' + pct1(a.ms / total) + '. ' + (idx === 0 ? 'The data agrees. Rare.' : 'The data disagrees.'));
+    };
+    dForm(b, input, 'Pull receipts', go, res);
+  });
+  add(2, 4, 'What were you doing on...', 'pick a date, pull the file', (b) => {
+    const input = el('input'); input.type = 'date';
+    const res = el('div');
+    const go = () => {
+      res.innerHTML = '';
+      if (!input.value) return;
+      const day = curPlays.filter(p => !p.podcast && dayKey(p.t) === input.value);
+      if (!day.length) { dSentence(res, '<b>' + input.value + '</b>: data blackout. Living in the moment, presumably.'); return; }
+      const ms = day.reduce((s, p) => s + p.ms, 0);
+      const artists = new Map(); day.forEach(p => bump(artists, p.artist, p.ms));
+      dSentence(res, '<b>' + niceDate(day[0].t) + '</b>: ' + day.length + ' plays, ' + fmtDur(ms) + '. Dominant compound: <b>' + esc(topOf(artists)[0]) + '</b>.');
+    };
+    dForm(b, input, 'Pull the file', go, res);
+  });
+  add(2, 3, 'Season splits', 'hours per season', (b) => {
+    dCols(b, D.seasonMs.map((v, i) => ({ label: SEASONS[i], full: SEASONS[i], v: v / 3600000 })), { wide: true, tipUnit: 'hours' });
+  });
+  add(2, 3, 'Milestones', 'as they happened', (b) => {
+    for (const m of D.milestones.slice(0, 3)) dSentence(b, '<b>#' + fmtInt(m.n) + '</b>: ' + esc(m.track) + ', ' + niceDate(m.date));
+  }, () => D.milestones.length);
+
+  /* ===== tier 2: mildly nosy ===== */
+  add(3, 6, 'Your minute', 'pick a time, meet its owner', (b) => {
+    const input = el('input'); input.type = 'time'; input.value = '17:32';
+    const res = el('div');
+    const go = () => {
+      res.innerHTML = '';
+      const [hh, mm] = (input.value || '17:32').split(':').map(Number);
+      const center = hh * 60 + mm;
+      const m = new Map();
+      for (const p of curPlays) {
+        if (p.podcast || p.ms < 30000) continue;
+        const mod = p.t.getHours() * 60 + p.t.getMinutes();
+        if (Math.min(Math.abs(mod - center), 1440 - Math.abs(mod - center)) <= 10) bump(m, tkey(p.track, p.artist));
+      }
+      const top = [...m.entries()].sort((a, c) => c[1] - a[1]).slice(0, 3);
+      if (!top.length) { dSentence(res, 'Nothing within 10 minutes of ' + fmtClock(hh, mm) + '. Suspicious.'); return; }
+      dPodium(res, top.map(([tk, n]) => ({ name: titleOf(tk), val: n + ' plays' })));
+    };
+    dForm(b, input, 'Consult the record', go, res);
+    go();
+  });
+  add(3, 3, 'The de facto alarm', 'your most common day-opener', (b) => {
+    const t = topTrackOf(D.alarm);
+    dSentence(b, '<b>' + esc(t.label) + '</b>, ' + t.n + ' mornings. Muscle memory chose it.');
+  }, () => D.alarm.size);
+  add(3, 3, 'The nightcap', 'last song of the day, most often', (b) => {
+    const t = topTrackOf(D.nightcap);
+    dSentence(b, '<b>' + esc(t.label) + '</b> tucked you in ' + t.n + ' times.');
+  }, () => D.nightcap.size);
+  add(3, 4, 'The 3am hall of fame', 'you should be asleep', (b) => {
+    const top = [...D.threeAm.entries()].sort((a, c) => c[1] - a[1]).slice(0, 5);
+    dRank(b, top.map(([tk, n], i) => ({ rank: i + 1, n1: titleOf(tk), n2: (S.byTrack.get(tk) || {}).artist || '', v: n, val: n + '×', tip: '<b>' + esc(titleOf(tk)) + '</b><br>' + n + ' plays, 3 to 4am' })));
+  }, () => D.threeAm.size);
+  add(3, 2, 'Taste entropy', 'in actual bits', (b) => {
+    const verdict = D.entropy < 3 ? 'a hallway with one poster' : D.entropy < 4.5 ? 'a respectable garden' : 'an unmanaged rainforest';
+    dBig(b, D.entropy.toFixed(2), 'bits', 'Your library is ' + verdict);
+  });
+  add(3, 2, 'Deja vu', 'same song, back to back', (b) => dBig(b, fmtInt(D.dejavu), 'repeats', D.maxLoop.len >= 3 ? 'Record: ' + esc(D.maxLoop.track) + ', ' + D.maxLoop.len + ' in a row' : ''));
+  add(3, 2, 'Instant regret', 'skips inside 3 seconds', (b) => {
+    const t = topTrackOf(D.instantTracks);
+    dBig(b, fmtInt(D.instant), 'skips', t ? 'Chief victim: ' + esc(t.short) : '');
+  }, () => hasSkip);
+  add(3, 3, 'The longest comeback', '', (b) => {
+    dSentence(b, 'You ignored <b>' + esc(D.comeback.track) + '</b> for <b>' + fmtInt(D.comeback.days) + ' days</b>, then came crawling back on ' + niceDate(D.comeback.when) + '.');
+  }, () => D.comeback.days > 30);
+  add(3, 2, 'Artist tolerance', 'consecutive songs before you need novelty', (b) => dBig(b, (D.runs.tracks / D.runs.count).toFixed(1), 'songs', ''), () => D.runs.count);
+  add(3, 4, 'Artist clinical trials', 'few survive', (b) => {
+    const labels = ['Phase I: auditioned', 'Phase II: called back', 'Phase III: in rotation', 'Approved: inner circle'];
+    dRank(b, D.funnel.map((n, i) => ({ rank: i + 1, n1: labels[i], n2: '', v: n, val: fmtInt(n), tip: '<b>' + labels[i] + '</b><br>' + fmtInt(n) + ' artists' })));
+  });
+  add(3, 3, 'The one-bite buffet', 'albums, one track played, ever', (b) => dMeter(b, D.oneBite / Math.max(1, D.albumsTouched), fmtInt(D.oneBite) + ' of ' + fmtInt(D.albumsTouched) + ' albums. You only take the bread.'), () => D.albumsTouched);
+  add(3, 6, 'The album alphabet', 'the trilogy continues', (b) => dAlphabet(b, D.albumLetter), () => D.albumLetter.some(v => v));
+  fam('weekday', () => {
+    for (let d = 0; d < 7; d++) {
+      add(3, 2, DOWS_FULL[d] + '’s anthem', '', ((dd) => (b) => {
+        const t = topTrackOf(D.dowTrack[dd]);
+        dBig(b, String(t.n), 'plays', '<b>' + esc(t.short) + '</b> owns your ' + DOWS_FULL[dd] + 's');
+      })(d), ((dd) => () => D.dowTrack[dd].size >= 5)(d));
+    }
+  });
+  fam('month', () => {
+    for (let m = 0; m < 12; m++) {
+      add(3, 2, 'Your ' + MONTHS_FULL[m] + ' sound', '', ((mm) => (b) => {
+        const t = topOf(D.monthArtist[mm]);
+        dBig(b, fmtHours(t[1]), 'hours', 'of ' + MONTHS_FULL[mm] + ' belong to <b>' + esc(t[0]) + '</b>');
+      })(m), ((mm) => () => D.monthArtist[mm].size > 0)(m));
+    }
+  });
+
+  /* ===== tier 3: oddly specific ===== */
+  add(4, 2, 'Minute of glory', 'your busiest minute of the day', (b) => dBig(b, fmtClock(Math.floor(D.gloryMinute / 60), D.gloryMinute % 60), '', fmtInt(D.minuteOfDay[D.gloryMinute]) + ' streams started here'));
+  add(4, 2, 'Skip contagion', 'skips are transmissible', (b) => {
+    const base = S.skips / S.skippable;
+    const exposed = D.contagion.exposedS / D.contagion.exposedN;
+    dBig(b, 'R0 ' + (exposed / base).toFixed(2), '', pct1(exposed) + ' after exposure, ' + pct1(base) + ' baseline');
+  }, () => hasSkip && D.contagion.exposedN > 20);
+  add(4, 2, 'The bail-out second', 'when you actually skip', (b) => {
+    let mode = 0; D.bailSecs.forEach((v, i) => { if (v > D.bailSecs[mode]) mode = i; });
+    dBig(b, 's' + mode, '', 'half-life ' + (D.halfLife / 1000).toFixed(1) + 's');
+  }, () => hasSkip);
+  add(4, 2, 'Shuffle trust', 'you vs the algorithm', (b) => {
+    const sr = D.shufSkip.s / D.shufSkip.n, mr = D.manSkip.s / D.manSkip.n;
+    dBig(b, (sr / mr).toFixed(2), '', sr > mr ? 'You do not trust the machine' : 'You trust the machine more than yourself');
+  }, () => hasSkip && D.shufSkip.n > 20 && D.manSkip.n > 20 && D.manSkip.s > 0);
+  add(4, 2, 'Self-sabotage', 'your pick, your skip', (b) => dBig(b, fmtInt(D.manSkip.s), 'incidents', 'no algorithm to blame'), () => hasSkip && D.manSkip.n > 0);
+  add(4, 6, 'Day-of-month favoritism', 'you are not neutral about calendar days', (b) => {
+    dCols(b, D.dom.map((v, i) => ({ label: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : '', full: 'Day ' + (i + 1), v })), { tiny: true, tipUnit: 'streams' });
+  });
+  add(4, 3, 'Punctuation party', 'streams by mark', (b) => dCols(b, Object.entries(D.punct).map(([k, v]) => ({ label: k, full: 'Titles with ' + k, v })), { wide: true, tipUnit: 'streams' }));
+  add(4, 3, 'The (feat.) economy', 'titles with a plus-one in parentheses', (b) => dMeter(b, D.parens / streams, pct1(D.parens / streams) + ' of your streams'));
+  add(4, 3, 'CAPS vs lowercase', 'shouting vs whispering titles', (b) => {
+    dCols(b, [{ label: 'CAPS', full: 'ALL CAPS titles', v: D.caps }, { label: 'lower', full: 'all lowercase titles', v: D.lower }], { wide: true, tipUnit: 'streams' });
+  });
+  add(4, 4, 'The color wheel', 'colors in your titles', (b) => {
+    const top = [...D.colorHits.entries()].sort((a, c) => c[1] - a[1]).slice(0, 6);
+    dRank(b, top.map(([w, n], i) => ({ rank: i + 1, n1: w, n2: '', v: n, val: fmtInt(n) + '×', tip: '<b>' + esc(w) + '</b><br>' + fmtInt(n) + ' streams' })));
+  }, () => D.colorHits.size);
+  add(4, 3, 'The forecast', 'weather conditions in your library', (b) => {
+    const top = [...D.weatherHits.entries()].sort((a, c) => c[1] - a[1]).slice(0, 5);
+    dCols(b, top.map(([w, v]) => ({ label: w, full: 'Titles with ' + w, v })), { wide: true, tipUnit: 'streams' });
+  }, () => D.weatherHits.size);
+  add(4, 4, 'Body parts in titles', 'an anatomical census', (b) => {
+    const top = [...D.bodyHits.entries()].sort((a, c) => c[1] - a[1]).slice(0, 6);
+    dRank(b, top.map(([w, n], i) => ({ rank: i + 1, n1: w, n2: '', v: n, val: fmtInt(n) + '×', tip: '<b>' + esc(w) + '</b><br>' + fmtInt(n) + ' streams' })));
+  }, () => D.bodyHits.size);
+  add(4, 3, 'Name dropping', 'first names sung at you', (b) => {
+    const t = topOf(D.nameHits);
+    dBig(b, fmtInt([...D.nameHits.values()].reduce((a, c) => a + c, 0)), 'streams', 'most serenaded: <b>' + esc(t[0]) + '</b>');
+  }, () => D.nameHits.size);
+  add(4, 3, 'The bedtime audit', 'tell us your bedtime', (b) => {
+    const input = el('input'); input.type = 'time'; input.value = '23:00';
+    const res = el('div');
+    const go = () => {
+      res.innerHTML = '';
+      const [hh, mm] = (input.value || '23:00').split(':').map(Number);
+      const bed = hh * 60 + mm;
+      let after = 0;
+      for (const p of curPlays) {
+        if (p.podcast || p.ms < 30000) continue;
+        const mod = p.t.getHours() * 60 + p.t.getMinutes();
+        if (mod >= bed || mod < 300) after++;
+      }
+      dSentence(res, '<b>' + fmtInt(after) + ' streams</b> after your alleged bedtime. The bedtime is a lie.');
+    };
+    dForm(b, input, 'Audit me', go, res);
+    go();
+  });
+  add(4, 3, 'First word census', '', (b) => {
+    const t = topOf(D.firstWord);
+    dSentence(b, 'Most common opening word: "<b>' + esc(t[0]) + '</b>" (' + fmtInt(t[1]) + ' streams).' + (t[0] === 'i' ? ' It really is all about you.' : ''));
+  }, () => D.firstWord.size);
+  const WORD_FAMILY = ['night', 'rain', 'dance', 'money', 'home', 'girl', 'boy', 'time', 'fire', 'summer', 'cry', 'baby'];
+  fam('word', () => {
+    for (const wd of WORD_FAMILY) {
+      add(4, 2, 'Songs about ' + wd, '', ((word) => (b) => {
+        let n = 0, best = null;
+        for (const t of S.byTrack.values()) if ((t.name || '').toLowerCase().includes(word)) { n += t.plays; if (!best || t.plays > best.plays) best = t; }
+        dBig(b, fmtInt(n), 'streams', best ? 'led by <b>' + esc(best.name) + '</b>' : '');
+      })(wd), ((word) => () => [...S.byTrack.values()].some(t => (t.name || '').toLowerCase().includes(word)))(wd));
+    }
+  });
+  const PAIRS = [['Saturday', 'Sunday', S.byDow[5], S.byDow[6]], ['9am', '9pm', S.byHour[9], S.byHour[21]], ['noon', 'midnight', S.byHour[12], S.byHour[0]]];
+  fam('pairs', () => {
+    for (const [la, lb, va, vb] of PAIRS) {
+      add(4, 2, la + ' vs ' + lb, 'the eternal rivalry', (b) => {
+        dCols(b, [{ label: la, full: la, v: Math.round(va / 60000) }, { label: lb, full: lb, v: Math.round(vb / 60000) }], { wide: true, tipUnit: 'min' });
+      });
+    }
+  });
+
+  /* ===== tier 4: who measures this ===== */
+  add(5, 4, 'Listening by moon phase', 'we consulted the actual moon', (b) => {
+    dCols(b, D.moon.map((v, i) => ({ label: MOON_NAMES[i].split(' ')[0], full: MOON_NAMES[i], v: v / 3600000 })), { wide: true, tipUnit: 'hours' });
+  });
+  add(5, 3, 'The werewolf podium', 'most played under a full moon', (b) => {
+    const top = [...D.moonFullTracks.entries()].sort((a, c) => c[1] - a[1]).slice(0, 3);
+    dPodium(b, top.map(([tk, n]) => ({ name: titleOf(tk), val: n + ' plays' })));
+  }, () => D.moonFullTracks.size >= 3);
+  add(5, 3, 'Title extremes', '', (b) => {
+    dSentence(b, 'Longest: <b>' + esc(D.longTitle.name) + '</b> (' + D.longTitle.name.length + ' chars)');
+    dSentence(b, 'Shortest: <b>' + esc(D.shortTitle.name) + '</b> (' + D.shortTitle.name.length + ')');
+  }, () => D.longTitle && D.shortTitle);
+  add(5, 2, 'The letter E invoice', '', (b) => dBig(b, fmtInt(D.eCount), 'letter Es', 'streamed via titles alone'));
+  add(5, 3, 'Vowel movement', 'A, E, I, O, U doing the heavy lifting', (b) => dMeter(b, D.vowels / Math.max(1, D.letters), pct1(D.vowels / Math.max(1, D.letters)) + ' of all letters streamed'));
+  add(5, 2, 'Letter mileage', '', (b) => dBig(b, (D.mileage / 1000000).toFixed(2), 'million letters', (D.mileage / 1200000).toFixed(1) + ' Moby-Dicks of title text'));
+  add(5, 2, 'The definite article', 'bands named The...', (b) => dBig(b, fmtHours(D.theMs), 'hours', 'committed to a grammatical particle'), () => D.theMs > 0);
+  add(5, 2, 'Scrabble royalty', 'highest-scoring artist name', (b) => dBig(b, fmtInt(D.scrabble.score), 'points', '<b>' + esc(D.scrabble.name) + '</b>, illegal on any board'), () => D.scrabble);
+  add(5, 2, 'Wordle-sized', 'one word, five letters', (b) => dBig(b, fmtInt(D.fiveLetter), 'streams', 'fit in a single guess'));
+  add(5, 3, 'Same name, different song', '', (b) => {
+    let best = null;
+    for (const [name, set] of D.sameName) if (set.size > 1 && (!best || set.size > best.set.size)) best = { name, set };
+    dSentence(b, best ? '<b>' + best.set.size + ' artists</b> sold you a song called "<b>' + esc(best.name) + '</b>". You bought every one.' : 'Every title unique. Statistically suspicious.');
+  });
+  fam('holiday', () => {
+    for (const [md, info] of D.holiday) {
+      add(5, 2, HOLIDAY_NAMES[md], '', ((h) => (b) => {
+        const t = topTrackOf(h.tracks);
+        dBig(b, fmtInt(h.n), 'streams', t ? 'headlined by <b>' + esc(t.short) + '</b>' : '');
+      })(info), ((h) => () => h.n > 0)(info));
+    }
+  });
+  fam('letter', () => {
+    const LETTERS_AVAIL = D.artistLetter.map((v, i) => v > 0 ? i : -1).filter(i => i >= 0);
+    for (let k = 0; k < Math.min(8, LETTERS_AVAIL.length); k++) {
+      const li = LETTERS_AVAIL[rint(LETTERS_AVAIL.length)];
+      const L = String.fromCharCode(65 + li);
+      add(5, 2, 'Filed under ' + L, 'artists starting with ' + L, ((letter, idx) => (b) => {
+        let n = 0, best = null;
+        for (const a of S.byArtist.values()) if (letterIdx(a.name) === idx) { n++; if (!best || a.ms > best.ms) best = a; }
+        dBig(b, fmtInt(n), 'artists', best ? 'led by <b>' + esc(best.name) + '</b>' : '');
+      })(L, li));
+    }
+  });
+
+  /* ===== tier 5: nobody asked ===== */
+  add(6, 3, 'Accidental anniversaries', 'a legally binding ritual', (b) => {
+    const a = D.annivBest;
+    dSentence(b, '<b>' + esc(nameOf(a.track)) + '</b>, played on ' + MONTHS[+a.md.split('-')[0] - 1] + ' ' + a.md.split('-')[1] + ' in <b>' + a.years + ' different years</b>.');
+  }, () => D.annivBest);
+  add(6, 2, 'Midnight straddlers', 'songs spanning two dates', (b) => dBig(b, fmtInt(D.straddlers), 'songs', 'each one a two-day cultural event'));
+  add(6, 6, 'The alphabet of grudges', 'skip rate by first letter', (b) => {
+    dCols(b, D.letterSkip.map((x, i) => ({ label: String.fromCharCode(65 + i), full: 'Titles starting with ' + String.fromCharCode(65 + i), v: x.n >= 10 ? Math.round(x.s / x.n * 100) : 0 })), { tiny: true, tipUnit: '% skipped' });
+  }, () => hasSkip);
+  add(6, 3, 'Small hours, small words', 'title length, day vs 2am', (b) => {
+    const nA = D.nightLen.sum / D.nightLen.n, dA = D.dayLen.sum / D.dayLen.n;
+    dSentence(b, 'Day: <b>' + dA.toFixed(1) + ' chars</b>. After midnight: <b>' + nA.toFixed(1) + '</b>. ' + (nA < dA ? 'No energy for subtitles at 2am.' : 'Baroque at night. Unusual.'));
+  }, () => D.nightLen.n >= 20);
+  add(6, 2, 'Chronotype certificate', 'your center of listening gravity', (b) => {
+    const h = Math.floor(D.chronotype / 60), m = Math.round(D.chronotype % 60) % 60;
+    dBig(b, fmtClock(h, m), '', 'not redeemable anywhere');
+  });
+  add(6, 3, 'Alliteration station', 'titles where every word matches', (b) => {
+    dBig(b, fmtInt(D.allit.streams), 'streams', D.allit.ex ? 'e.g. <b>' + esc(D.allit.ex.name) + '</b>' : '');
+  }, () => D.allit.streams > 0);
+  add(6, 6, 'The ransom note', 'type a word, we cut the letters', (b) => {
+    const input = el('input'); input.type = 'text'; input.placeholder = 'your name...'; input.maxLength = 24;
+    const res = el('div');
+    const go = () => {
+      res.innerHTML = '';
+      const q = lettersOnly(input.value || '');
+      if (!q) return;
+      const byLetter = new Map();
+      for (const t of S.byTrack.values()) {
+        const li = (lettersOnly(t.name)[0] || '');
+        if (li && (!byLetter.has(li) || byLetter.get(li).plays < t.plays)) byLetter.set(li, t);
+      }
+      for (const ch of q) {
+        const t = byLetter.get(ch);
+        dSentence(res, '<b>' + ch.toUpperCase() + '</b> · ' + (t ? esc(t.name) + ' <span style="color:var(--muted)">(' + esc(t.artist) + ')</span>' : '<span style="color:var(--muted)">letter held hostage</span>'));
+      }
+    };
+    dForm(b, input, 'Cut the letters', go, res);
+  });
+  fam('exactly', () => {
+    for (const n of [2, 3, 7]) {
+      add(6, 2, 'Played exactly ' + n + ' times', 'artists, not more, not less', ((k) => (b) => {
+        const c = [...S.byArtist.values()].filter(a => a.plays === k).length;
+        dBig(b, fmtInt(c), 'artists', 'a very specific level of interest');
+      })(n));
+    }
+  });
+  fam('stuck', () => {
+    for (const n of [10, 25, 50]) {
+      add(6, 2, 'Stuck at ' + n + ' plays', 'tracks, exactly', ((k) => (b) => {
+        const c = [...S.byTrack.values()].filter(t => t.plays === k).length;
+        dBig(b, fmtInt(c), 'tracks', 'frozen at a round number');
+      })(n));
+    }
+  });
+
+  /* ===== tier 6: forensic ===== */
+  add(7, 6, 'The second hand', 'which second you press play on', (b) => {
+    dCols(b, D.secs.map((v, i) => ({ label: i % 10 === 0 ? String(i) : '', full: 'Second ' + i, v })), { tiny: true, tipUnit: 'streams' });
+  }, () => D.hasSeconds);
+  add(7, 2, 'Palindrome o’clock', '12:21, 13:31, and friends', (b) => {
+    const f = topTrackOf(D.palinFav);
+    dBig(b, fmtInt(D.palinTime), 'streams', f ? 'favorite: <b>' + esc(f.short) + '</b>' : '');
+  });
+  add(7, 2, 'Punctuality award', 'started at :00:00 exactly', (b) => dBig(b, fmtInt(D.topOfHour), 'streams', 'German rail could never'), () => D.hasSeconds);
+  add(7, 2, 'Friday the 13th', 'survival log', (b) => dBig(b, fmtInt(D.fri13), 'streams', D.fri13 ? 'survived every one' : 'never risked it'));
+  add(7, 2, 'February 29', 'a day that mostly does not exist', (b) => dBig(b, fmtInt(D.leap), 'streams', D.leap ? 'attendance on a fake day' : 'you refuse to acknowledge it'));
+  fam('mmclub', () => {
+    for (const mm of [7, 11, 13, 22, 33, 44, 55]) {
+      add(7, 2, 'The :' + String(mm).padStart(2, '0') + ' club', 'streams starting at minute ' + mm, ((k) => (b) => {
+        dBig(b, fmtInt(D.minuteMod60[k]), 'streams', 'membership was automatic');
+      })(mm));
+    }
+  });
+  fam('streamno', () => {
+    for (let k = 0; k < 3; k++) {
+      const n = 1 + rint(D.allStreams.length || 1);
+      add(7, 3, 'Stream #' + fmtInt(n), 'a random entry from the ledger', ((idx) => (b) => {
+        const s0 = D.allStreams[idx - 1];
+        dSentence(b, '<b>' + esc(nameOf(s0[1])) + '</b>, ' + niceDate(new Date(s0[0])) + '. It happened. It is on the record.');
+      })(n), () => D.allStreams.length > 0);
+    }
+  });
+  fam('cummark', () => {
+    for (const mark of Object.keys(D.cumMarks)) {
+      add(7, 3, 'Hour ' + fmtInt(mark) + ' of listening', 'the moment you crossed it', ((mk) => (b) => {
+        dSentence(b, 'Crossed on <b>' + niceDate(D.cumMarks[mk]) + '</b>. There was no ceremony.');
+      })(mark));
+    }
+  });
+  add(8, 2, 'Your favorite second', 'of any minute', (b) => {
+    let best = 0; D.secs.forEach((v, i) => { if (v > D.secs[best]) best = i; });
+    dBig(b, ':' + String(best).padStart(2, '0'), '', fmtInt(D.secs[best]) + ' presses. Nobody knows why');
+  }, () => D.hasSeconds);
+  add(8, 6, 'The last-letter alphabet', 'first letters were taken', (b) => dAlphabet(b, D.lastLetter));
+  add(8, 2, 'The bigram elite', 'top two-letter title opening', (b) => {
+    const m = new Map();
+    for (const t of S.byTrack.values()) { const pre = lettersOnly(t.name).slice(0, 2); if (pre.length === 2) bump(m, pre, t.plays); }
+    const t = topOf(m);
+    dBig(b, t[0].toUpperCase(), '', fmtInt(t[1]) + ' streams open with these two letters');
+  }, () => S.byTrack.size > 5);
+  add(8, 3, 'Longest artist name', '', (b) => {
+    let best = null;
+    for (const a of S.byArtist.values()) if (!best || (a.name || '').length > best.name.length) best = a;
+    dSentence(b, '<b>' + esc(best.name) + '</b>: ' + best.name.length + ' characters, ' + fmtInt(best.plays) + ' plays. Every keystroke earned.');
+  });
+  add(8, 2, 'Palindromic names', 'reads the same both ways', (b) => {
+    dBig(b, fmtInt(D.palinNames.length), 'found', D.palinNames[0] ? 'including <b>' + esc(D.palinNames[0].what) + '</b>' : 'your library only goes forwards');
+  });
+
+  /* ===== tier 7: the joke drawer ===== */
+  add(9, 3, 'Your top 1 artist', 'a comprehensive ranking', (b) => {
+    const a = S.topArtists[0];
+    dRank(b, [{ rank: 1, n1: a.name, n2: '', v: 1, val: fmtDur(a.ms), tip: '<b>' + esc(a.name) + '</b><br>the only bar' }]);
+    dSentence(b, 'One bar. It won.');
+  });
+  add(9, 2, 'Moons consulted', 'for the moon phase chart', (b) => dBig(b, '1', 'moon', 'we only have the one'));
+  add(9, 2, 'Your listener ranking', 'among users of this dashboard', (b) => dBig(b, '#1', '', 'of 1. Congratulations'));
+  add(9, 3, 'Probability the next play is music', 'not a podcast', (b) => {
+    const music = total / (total + Math.max(1, S.podcastMs));
+    dMeter(b, music, pct1(music) + '. The forecast is songs');
+  });
+  add(9, 2, 'Stats on this page', '', (b) => dBig(b, fmtInt(dealCount), 'stats', 'you are reading a stat about them'));
+  add(10, 3, 'Streams on days ending in y', 'a complete analysis', (b) => {
+    dMeter(b, 1, '100%. Every single day cooperated.');
+  });
+  add(10, 3, 'Streams that started before they ended', 'chronology check', (b) => dMeter(b, 1, '100%. Physics remains undefeated.'));
+  add(10, 2, 'February 30 activity', 'a perfect record', (b) => dBig(b, '0', 'streams', 'flawless attendance on a day that has never existed'));
+  add(10, 2, 'Average songs per song', 'normalized', (b) => dBig(b, '1.0', '', 'remarkably consistent'));
+  add(10, 3, 'Bars to the left of each bar', 'a self-portrait', (b) => {
+    dCols(b, [0, 1, 2, 3, 4].map(i => ({ label: String(i), full: 'Bar ' + (i + 1), v: i })), { wide: true, tipUnit: 'bars' });
+  });
+  add(10, 2, 'The quietest artist', 'in your entire library', (b) => dSentence(b, '<b>Silence</b>. Zero plays. Still undefeated.'));
+  add(10, 2, 'This space', '', (b) => dSentence(b, 'Intentionally left blank, except for this sentence explaining that.'));
+
+  return P;
+}
+
+
+/* ---------- dealing and progressive rendering ---------- */
+let deepIO = null, fillQueue = [], pumpTimer = null;
+
+function fillCard(card) {
+  const f = card._fill;
+  card._fill = null;
+  if (f) { try { f(); } catch (err) { console.warn('deep block failed:', err); card.remove(); } }
+}
+function pumpFills() {
+  const t0 = performance.now();
+  while (fillQueue.length && performance.now() - t0 < 8) fillCard(fillQueue.shift());
+  pumpTimer = fillQueue.length ? setTimeout(pumpFills, 16) : null;
+}
+function fillNearViewport() {
+  if (!fillQueue.length) return;
+  const lo = -1600, hi = innerHeight + 1600;
+  fillQueue = fillQueue.filter(c => {
+    const r = c.getBoundingClientRect();
+    if (r.bottom > lo && r.top < hi) { fillCard(c); return false; }
+    return true;
+  });
+}
+addEventListener('scroll', fillNearViewport, { passive: true });
+
+function dealDeep() {
+  const S = lastStats, D = curDeep;
+  if (!S || !D) return;
+  const wrap = $('deepList');
+  wrap.innerHTML = '';
+  if (deepIO) { deepIO.disconnect(); deepIO = null; }
+  fillQueue = [];
+  if (pumpTimer) { clearTimeout(pumpTimer); pumpTimer = null; }
+
+  const pool = buildPool(S, D).filter(e => { try { return !e.avail || e.avail(); } catch (err) { return false; } });
+  $('deepCount').textContent = pool.length;
+  const FAM_CAP = { weekday: 3, month: 4, word: 4, pairs: 2, holiday: 3, letter: 3, exactly: 2, stuck: 2, mmclub: 2, streamno: 2, cummark: 2 };
+  const famSeen = {};
+  const shuffled = pool.map(e => ({ e, k: Math.random() })).sort((a, b) => a.k - b.k).map(x => x.e);
+  const picked = [];
+  for (const e of shuffled) {
+    if (picked.length >= 101) break;
+    if (e.fam) {
+      famSeen[e.fam] = (famSeen[e.fam] || 0) + 1;
+      if (famSeen[e.fam] > (FAM_CAP[e.fam] || 3)) continue;
+    }
+    picked.push(e);
+  }
+  // caps are a preference, 101 is a promise
+  for (const e of shuffled) {
+    if (picked.length >= 101) break;
+    if (!picked.includes(e)) picked.push(e);
+  }
+  picked.sort((a, b) => (a.w + Math.random() * 2.8) - (b.w + Math.random() * 2.8));
+
+  // Observer fills whatever scrolls near; the chunked pump plus the scroll
+  // drain guarantee everything fills, a time-budgeted slice at a time.
+  if ('IntersectionObserver' in window) {
+    deepIO = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        if (!en.isIntersecting) continue;
+        deepIO.unobserve(en.target);
+        fillCard(en.target);
+      }
+    }, { rootMargin: '1200px 0px' });
+  }
+
+  dealCount = picked.length;
+  for (const blk of picked) {
+    const card = el('div', 'card dcard sp' + blk.sz);
+    card.append(el('h3', null, blk.t));
+    if (blk.s) card.append(el('div', 'cardsub', blk.s));
+    const body = el('div');
+    card.append(body);
+    card._fill = () => blk.r(body);
+    wrap.append(card);
+    if (deepIO) deepIO.observe(card);
+    fillQueue.push(card);
+  }
+  // first screenful renders immediately, the rest stream in
+  for (let k = 0; k < 10 && fillQueue.length; k++) fillCard(fillQueue.shift());
+  pumpTimer = setTimeout(pumpFills, 30);
+
+  const fin = el('div', 'card dcard sp6 finale');
+  fin.append(el('div', 'cardsub', 'THE BOTTOM'));
+  fin.append(el('h3', null, 'You actually made it.'));
+  fin.append(el('div', 'bignum', fmtInt(picked.length)));
+  fin.append(el('div', 'bigsub', 'stats deep, dealt from a vault of ' + fmtInt(pool.length) + '. Shuffle for a fresh hand; the vault goes deeper than the page.'));
+  const row = el('div', 'btnrow');
+  const again = el('button', 'primary', 'Deal 101 new stats');
+  again.addEventListener('click', () => { dealDeep(); $('deepAnchor').scrollIntoView({ behavior: 'smooth' }); });
+  const up = el('button', 'ghost', 'Back to the surface');
+  up.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  row.append(again, up);
+  fin.append(row);
+  wrap.append(fin);
+}
+
 const CATALOG = (() => {
   const A = [
     ['Taylor Swift', 10, ['Cruel Summer', 'Anti-Hero', 'Style', 'August']],
@@ -994,7 +1955,17 @@ const CATALOG = (() => {
     'Fred again..': 'dance', 'Daft Punk': 'dance', 'Charli XCX': 'dance', 'Calvin Harris': 'dance',
     'RÜFÜS DU SOL': 'dance', 'Peggy Gou': 'dance',
   };
-  return A.map(([name, w, tracks]) => ({ name, w, tracks, genre: GENRE[name] || 'pop' }));
+  const ALBUM = {
+    'Taylor Swift': 'Midnights', 'The Weeknd': 'After Hours', 'SZA': 'SOS', 'Kendrick Lamar': 'GNX',
+    'Billie Eilish': 'HIT ME HARD AND SOFT', 'Sabrina Carpenter': 'Short n’ Sweet', 'Bad Bunny': 'Un Verano Sin Ti',
+    'Chappell Roan': 'The Rise and Fall of a Midwest Princess', 'Arctic Monkeys': 'AM', 'Frank Ocean': 'Blonde',
+    'Tame Impala': 'Currents', 'Dua Lipa': 'Future Nostalgia', 'Hozier': 'Unreal Unearth', 'Fred again..': 'Actual Life 3',
+    'Doja Cat': 'Planet Her', 'Zach Bryan': 'American Heartbreak', 'Radiohead': 'OK Computer', 'Fleetwood Mac': 'Rumours',
+    'Beyoncé': 'RENAISSANCE', 'Daft Punk': 'Random Access Memories', 'Olivia Rodrigo': 'GUTS', 'Travis Scott': 'UTOPIA',
+    'Mitski': 'The Land Is Inhospitable and So Are We', 'Gracie Abrams': 'The Secret of Us', 'Charli XCX': 'BRAT',
+    'Calvin Harris': '18 Months', 'RÜFÜS DU SOL': 'Solace', 'Peggy Gou': 'I Hear You',
+  };
+  return A.map(([name, w, tracks]) => ({ name, w, tracks, genre: GENRE[name] || 'pop', alb: ALBUM[name] || null }));
 })();
 
 const PODCAST_SHOWS = [
@@ -1013,7 +1984,7 @@ function fictionalPool(n) {
   for (let i = 0; i < n; i++) {
     const name = ADJ[i % ADJ.length] + ' ' + NOUN[Math.floor(i / ADJ.length) % NOUN.length] + (i >= 400 ? ' ' + (Math.floor(i / 400) + 1) : '');
     const tracks = [T1[i % 10] + ' ' + T2[(i + 3) % 10], T1[(i + 5) % 10] + ' ' + T2[(i + 7) % 10], T1[(i + 2) % 10] + ' ' + T2[(i + 8) % 10]];
-    pool.push({ name, tracks, genre: 'indie', w: 1 });
+    pool.push({ name, tracks, genre: 'indie', w: 1, alb: name + [' EP', ' Sessions', ' Demos'][i % 3] });
   }
   return pool;
 }
@@ -1116,7 +2087,7 @@ function loadSample(key) {
           ts: t.toISOString(), platform, ms_played: ms,
           master_metadata_track_name: track,
           master_metadata_album_artist_name: art.name,
-          master_metadata_album_album_name: null,
+          master_metadata_album_album_name: art.alb || null,
           spotify_track_uri: 'spotify:track:sample',
           reason_start: 'trackdone', reason_end: skipped ? 'fwdbtn' : 'trackdone',
           shuffle: Math.random() < 0.4, skipped, offline: false, incognito_mode: false,
@@ -1156,6 +2127,7 @@ $('themeBtn').addEventListener('click', () => {
   try { localStorage.setItem('unwrapped-theme', next); } catch (e) {}
   applyTheme(next);
 });
+$('shuffleBtn').addEventListener('click', () => dealDeep());
 
 const drop = $('drop');
 $('pickBtn').addEventListener('click', (e) => { e.stopPropagation(); $('fileInput').click(); });

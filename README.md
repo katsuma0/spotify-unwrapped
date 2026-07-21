@@ -21,6 +21,17 @@ native `DecompressionStream`).
   follows the system until you choose
 - Step-by-step in-app guide for requesting your data from Spotify, with iPhone
   specifics (safe areas and touch targets are iOS-ready)
+- **The deep end**: 101 statistics dealt at random from a vault of ~150
+  generators, in a dozen visual forms (alphabet charts, a 7x24 heatmap,
+  podiums, meters, funnels, 60-second histograms, moon phases, unit
+  conversions, single-bar jokes). Ordered normal to weird: it opens with
+  respectable charts and ends with "streams on days ending in y (100%)".
+  Six interactive lookups (word detector, your minute, date file pull,
+  ransom note, bedtime audit, receipts). A shuffle button redeals a fresh
+  101. Mixed-size dense grid, uniform gaps, no numbering, minimal text.
+  Cards render progressively (time-budgeted chunks plus scroll-driven fill
+  plus IntersectionObserver) so scrolling stays smooth. Blocks that need
+  extended-export fields hide themselves on account-data-only uploads.
 
 ## Run it
 
