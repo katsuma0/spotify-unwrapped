@@ -211,33 +211,18 @@
   #tooltip b { font-weight: 650; }
 
   /* the deep end */
-  .deephead { margin: 44px 0 14px; text-align: center; }
-  .deephead h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-  .deephead p { color: var(--ink-2); margin-top: 4px; }
-  .deephead .btnrow { margin-top: 14px; }
-  #deepList {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 14px;
-    grid-auto-flow: dense;
-  }
+  .deephead { margin: 30px 0 14px; }
+  /* columns and per-card spans are set in JS so every row fills exactly */
+  #deepList { display: grid; gap: 14px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
   #deepList > .card { margin: 0; min-width: 0; }
-  .dcard { content-visibility: auto; }
-  .sp2 { grid-column: span 2; contain-intrinsic-size: auto 190px; }
-  .sp3 { grid-column: span 3; contain-intrinsic-size: auto 210px; }
-  .sp4 { grid-column: span 4; contain-intrinsic-size: auto 250px; }
-  .sp6 { grid-column: span 6; contain-intrinsic-size: auto 280px; }
-  @media (max-width: 900px) {
-    .sp2 { grid-column: span 3; }
-    .sp4 { grid-column: span 6; }
+  .dcard {
+    content-visibility: auto; contain-intrinsic-size: auto 170px;
+    display: flex; flex-direction: column; padding: 16px 16px 14px;
   }
-  @media (max-width: 600px) {
-    .sp2, .sp3, .sp4, .sp6 { grid-column: span 6; }
-  }
+  .dcard > div:last-child { flex: 1; display: flex; flex-direction: column; justify-content: center; }
   .dcard h3 { font-size: 15px; }
   .dcard .cardsub { margin-bottom: 12px; }
-  .dcard { display: flex; flex-direction: column; }
-  .dcard > div:last-child { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .finale { grid-column: 1 / -1; }
   .bignum { font-size: clamp(34px, 7vw, 46px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 6px 0 2px; }
   .bignum small { font-size: 18px; font-weight: 600; color: var(--ink-2); margin-left: 4px; letter-spacing: 0; }
   .bigsub { color: var(--ink-2); font-size: 13.5px; }
@@ -385,14 +370,12 @@
       <div class="rlist" id="platformList"></div>
     </div>
 
-    <div class="deephead" id="deepAnchor">
-      <div class="btnrow"><button class="ghost" id="shuffleBtn">Shuffle</button></div>
-    </div>
+    <div class="deephead" id="deepAnchor"></div>
     <div id="deepList"></div>
   </section>
 
   <footer>
-    A personal-stats prototype, v0.8. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
+    A personal-stats prototype, v0.9. Not affiliated with Spotify. Your file is parsed locally in this tab and never leaves your device.
     <div class="madeby">Created by <a href="https://katsuma0.github.io" target="_blank" rel="noopener">Katsuma Onishi</a></div>
   </footer>
 </main>
@@ -1780,7 +1763,7 @@ function buildPool(S, D) {
   });
 
   /* ===== tier 6: forensic ===== */
-  add(7, 2, 'The second hand', 'the second you press play on', (b) => {
+  add(7, 6, 'The second hand', 'the second you press play on', (b) => {
     const max = Math.max(...D.secs, 1);
     const grid = el('div', 'secrows');
     D.secs.forEach((v, i) => {
@@ -2111,7 +2094,8 @@ function dealDeep() {
 
   dealCount = picked.length;
   for (const blk of picked) {
-    const card = el('div', 'card dcard sp' + blk.sz);
+    const card = el('div', 'card dcard');
+    card.dataset.sz = blk.sz;
     card.append(el('h3', null, blk.t));
     if (blk.s) card.append(el('div', 'cardsub', blk.s));
     const body = el('div');
@@ -2121,17 +2105,72 @@ function dealDeep() {
     if (deepIO) deepIO.observe(card);
     fillQueue.push(card);
   }
+
+  const fin = el('div', 'finale');
+  const again = el('button', 'primary', 'Shuffle again');
+  again.addEventListener('click', () => { window.scrollTo(0, 0); dealDeep(); });
+  fin.append(again);
+  wrap.append(fin);
+
+  layoutDeep();
   // first screenful renders immediately, the rest stream in
   for (let k = 0; k < 10 && fillQueue.length; k++) fillCard(fillQueue.shift());
   pumpTimer = setTimeout(pumpFills, 30);
-
-  const fin = el('div', 'finale sp6');
-  fin.style.gridColumn = 'span 6';
-  const up = el('button', 'ghost', 'Back to the surface');
-  up.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-  fin.append(up);
-  wrap.append(fin);
 }
+
+// Pack cards into rows that each sum to exactly the column count, so no row
+// ever leaves a hole. Three size classes: full charts get their own row (they
+// never stretch a small card), medium list/chart cards pair up, small number
+// cards group in threes. Rows fill by pulling the next fitting card forward
+// within a short window, which keeps the normal-to-weird order roughly intact.
+// Only medium cards absorb leftover width; a small number card is never
+// ballooned wide, so cells stay tight to their content.
+const SIZE_UNITS = { 6: { sm: 2, md: 3, lg: 6 }, 4: { sm: 2, md: 2, lg: 4 }, 2: { sm: 2, md: 2, lg: 2 } };
+function deepCols() { const w = innerWidth; return w >= 760 ? 6 : w >= 520 ? 4 : 2; }
+function sizeClass(sz) { return sz <= 2 ? 'sm' : sz >= 6 ? 'lg' : 'md'; }
+function layoutDeep() {
+  const list = $('deepList');
+  const cols = deepCols();
+  const units = SIZE_UNITS[cols];
+  list.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
+  const finale = list.querySelector('.finale');
+  const q = [...list.children].filter(c => c.classList.contains('dcard'))
+    .map(c => { const cls = sizeClass(+c.dataset.sz); return { c, cls, u: units[cls] }; });
+  const ordered = [];
+  const place = (it) => { it.c.style.gridColumn = 'span ' + it.u; ordered.push(it.c); };
+  while (q.length) {
+    const first = q.shift();
+    if (first.cls === 'lg' || cols === 2) { first.u = cols; place(first); continue; }
+    const row = [first]; let used = first.u;
+    while (used < cols) {
+      const need = cols - used;
+      let idx = -1;
+      for (let j = 0; j < q.length && j < 14; j++) {
+        if (q[j].cls === 'lg' || q[j].u > need) continue;
+        idx = j;
+        if (q[j].u === need) break;   // exact fit wins
+      }
+      if (idx < 0) break;
+      const it = q.splice(idx, 1)[0];
+      row.push(it); used += it.u;
+    }
+    if (used < cols) {
+      let leftover = cols - used;
+      const flex = row.filter(it => it.cls !== 'sm');
+      const tg = flex.length ? flex : row;   // only medium cards stretch; smalls stay put
+      let t = 0;
+      while (leftover-- > 0) { tg[t % tg.length].u += 1; t++; }
+    }
+    row.forEach(place);
+  }
+  // reflow the DOM to the packed order so grid tiles each row exactly
+  for (const c of ordered) list.insertBefore(c, finale);
+}
+let deepResizeT = null;
+addEventListener('resize', () => {
+  clearTimeout(deepResizeT);
+  deepResizeT = setTimeout(() => { if ($('deepList').children.length) layoutDeep(); }, 120);
+});
 
 const CATALOG = (() => {
   const A = [
@@ -2346,7 +2385,6 @@ $('themeBtn').addEventListener('click', () => {
   try { localStorage.setItem('unwrapped-theme', next); } catch (e) {}
   applyTheme(next);
 });
-$('shuffleBtn').addEventListener('click', () => dealDeep());
 
 const drop = $('drop');
 $('pickBtn').addEventListener('click', (e) => { e.stopPropagation(); $('fileInput').click(); });
