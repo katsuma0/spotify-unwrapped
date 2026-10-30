@@ -241,7 +241,7 @@
   .pod .podval { color: var(--ink-2); font-size: 12.5px; }
   .pod .podrank { color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .06em; }
   .wordform { display: flex; gap: 8px; margin: 10px 0 14px; flex-wrap: wrap; }
-  .wordform input[type="text"], .wordform input[type="time"] {
+  .wordform input[type="text"], .wordform input[type="time"], .wordform input[type="date"] {
     font: 15px system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink);
     background: var(--page); border: 1px solid var(--baseline); border-radius: 10px; padding: 10px 12px; min-height: 44px; flex: 1; min-width: 120px;
   }
@@ -253,6 +253,65 @@
   .secbar { height: 5px; background: var(--accent); border-radius: 0 2px 2px 0; }
   .madeby { margin-top: 10px; }
   .madeby a { color: var(--ink-2); font-weight: 650; }
+
+  .deephead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .deepnote { color: var(--muted); font-size: 13px; }
+  .dcard { position: relative; }
+  .swapbtn {
+    position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 8px;
+    border: none; background: transparent; color: var(--muted); cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center; touch-action: manipulation;
+  }
+  .swapbtn:hover { color: var(--ink); background: color-mix(in oklab, var(--ink) 6%, transparent); }
+  .swapbtn:active { transform: rotate(180deg); transition: transform .25s; }
+  .swapbtn svg { width: 16px; height: 16px; }
+  .dcard h3 { padding-right: 30px; }
+  .dcard.fresh { animation: cardin .22s ease-out; }
+  @keyframes cardin { from { opacity: 0; } to { opacity: 1; } }
+  #stickyShuffle {
+    position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 5;
+    border-radius: 999px; padding: 12px 18px; box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .18s, transform .18s;
+  }
+  #stickyShuffle.on { opacity: 1; pointer-events: auto; transform: none; }
+  .waffle { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; margin: 10px 0 6px; max-width: 360px; }
+  .wd { aspect-ratio: 1; border-radius: 50%; background: color-mix(in oklab, var(--accent) 18%, var(--surface)); }
+  .wd.on { background: var(--accent); }
+  .clockwrap { display: flex; justify-content: center; margin: 4px 0; }
+  .versus { margin: 10px 0 4px; }
+  .vlabels { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .vl { min-width: 0; }
+  .vl.right { text-align: right; }
+  .vl .vname { font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vl .vval { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; color: var(--ink-2); }
+  .vl.win .vval { color: var(--ink); }
+  .vbar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px; }
+  .vseg.a { background: var(--accent); }
+  .vseg.b { background: var(--series-blue); }
+  .stackbar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; gap: 2px; margin: 10px 0 10px; }
+  .sseg { min-width: 2px; }
+  .legend { display: grid; gap: 5px; }
+  .legend.row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+  .legend .li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); min-width: 0; }
+  .legend .ldot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .legend .lname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .legend .lval { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .legend.row .lval { margin-left: 0; }
+  .cloud { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; margin: 8px 0 4px; }
+  .cloud .cw { font-weight: 600; color: var(--ink-2); line-height: 1.1; cursor: default; }
+  .cloud .cw.top { color: var(--ink); }
+  .sliderrow { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; }
+  .sliderrow input[type="range"] { flex: 1; accent-color: var(--accent-deep); min-height: 44px; margin: 0; min-width: 0; }
+  .sliderout { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 54px; text-align: right; }
+  .wordform input[type="date"], .wordform input[type="number"], .wordform select {
+    font: 15px system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink);
+    background: var(--page); border: 1px solid var(--baseline); border-radius: 10px; padding: 10px 12px; min-height: 44px; flex: 1; min-width: 120px;
+  }
+  .guessres .bignum { margin-top: 2px; }
+  .dcard .tiles { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 6px 0 0; }
+  .dcard .tile { padding: 12px 14px; }
+  .dcard .tile .value { font-size: 22px; }
+  .rerollrow { margin-top: 12px; }
 
   footer { margin-top: 40px; color: var(--muted); font-size: 12.5px; }
   footer a { color: var(--muted); }
@@ -370,7 +429,7 @@
       <div class="rlist" id="platformList"></div>
     </div>
 
-    <div class="deephead" id="deepAnchor"></div>
+    <div class="deephead" id="deepAnchor"><span class="deepnote" id="deepNote"></span></div>
     <div id="deepList"></div>
   </section>
 
@@ -381,6 +440,7 @@
 </main>
 
 <div id="tooltip"></div>
+<button class="primary" id="stickyShuffle" type="button" aria-label="Shuffle the deep end again">Shuffle</button>
 
 <script>
 'use strict';
@@ -840,10 +900,19 @@ function renderRanked(wrap, rows) {
   }
 }
 
+// Usable width for a chart. Falls back to the enclosing card when the wrapper has
+// no layout yet (content-visibility skips off-screen card contents), so a chart
+// drawn off screen still fits its card.
+function boxW(elm, lo, hi) {
+  let w = elm.clientWidth;
+  if (!w) { const c = elm.closest('.dcard, .card'); if (c && c.clientWidth) w = c.clientWidth - 32; }
+  return Math.max(lo, Math.min(w || 460, hi));
+}
+
 /* vertical columns (hour of day / weekday) */
 function renderColumns(wrap, data, opts = {}) {
   wrap.innerHTML = '';
-  const W = Math.max(250, wrap.clientWidth || 460), H = 190;
+  const W = boxW(wrap, 250, 2000), H = 190;
   const padL = 6, padR = 6, padB = 22, padT = 18;
   const iw = W - padL - padR, ih = H - padT - padB;
   const n = data.length;
@@ -1029,6 +1098,7 @@ function topOf(map) { let bk = null, bv = -1; for (const [k, v] of map) if (v > 
 function computeDeep(plays, S) {
   const music = plays.filter(p => !p.podcast);
   const D = {};
+  D.plays = plays; D.music = music;
   const arr26 = () => new Array(26).fill(0);
   D.artistLetter = arr26(); D.titleLetter = arr26(); D.albumLetter = arr26(); D.lastLetter = arr26();
   D.letterSkip = Array.from({ length: 26 }, () => ({ s: 0, n: 0 }));
@@ -1399,7 +1469,7 @@ function dAlphabet(body, counts, opts = {}) {
 function dHeat(body, grid) {
   const wrap = el('div', 'colwrap'); body.append(wrap);
   const RAMP = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
-  const W = Math.max(320, Math.min(body.clientWidth || 640, 900)), padL = 34, padT = 6, padB = 20;
+  const W = boxW(body, 320, 900), padL = 34, padT = 6, padB = 20;
   const cw = (W - padL - 6) / 24, ch = 17;
   const H = padT + ch * 7 + padB;
   const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'tiny' });
@@ -1436,6 +1506,279 @@ function dForm(body, inputEl, btnLabel, onGo, resultDiv) {
   body.append(form, resultDiv);
 }
 
+function dTiles(body, pairs) { // [[value, label], ...]
+  const grid = el('div', 'tiles');
+  for (const [v, l] of pairs) { const t = el('div', 'tile'); t.append(el('div', 'value', v), el('div', 'label', l)); grid.append(t); }
+  body.append(grid);
+}
+function dWaffle(body, pct, note) { // 100 dots, 20 by 5, filled left to right
+  const n = Math.max(0, Math.min(100, Math.round((pct || 0) * 100)));
+  const g = el('div', 'waffle');
+  for (let i = 0; i < 100; i++) g.append(el('span', 'wd' + (i < n ? ' on' : '')));
+  body.append(g);
+  if (note) { const d = el('div', 'meternote'); d.innerHTML = note; body.append(d); }
+}
+function dSpark(body, values, opts = {}) { // small line over an ordered series
+  const wrap = el('div', 'colwrap'); body.append(wrap);
+  const n = values.length;
+  if (n < 2) { dSentence(body, 'Not enough points for a line.'); return; }
+  const W = boxW(body, 220, 900), H = opts.h || 86;
+  const padL = 6, padR = 6, padT = 14, padB = opts.labels ? 18 : 8;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const max = Math.max(...values, opts.max || 0, 0.000001);
+  const X = (i) => padL + i / (n - 1) * iw, Y = (v) => padT + (1 - v / max) * ih;
+  const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'tiny' });
+  svg.append(svgEl('line', { x1: padL, y1: H - padB + .5, x2: W - padR, y2: H - padB + .5, stroke: 'var(--baseline)', 'stroke-width': 1 }));
+  if (opts.diag) svg.append(svgEl('line', { x1: X(0), y1: Y(0), x2: X(n - 1), y2: Y(max), stroke: 'var(--grid)', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+  const line = values.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+  svg.append(svgEl('path', { d: line + ` L ${X(n - 1).toFixed(1)} ${Y(0)} L ${X(0).toFixed(1)} ${Y(0)} Z`, fill: 'var(--series-blue)', opacity: 0.1 }));
+  svg.append(svgEl('path', { d: line, fill: 'none', stroke: 'var(--series-blue)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+  const peak = values.reduce((m, v, i) => v > values[m] ? i : m, 0);
+  svg.append(svgEl('circle', { cx: X(peak), cy: Y(values[peak]), r: 3.5, fill: 'var(--series-blue)', stroke: 'var(--surface)', 'stroke-width': 2 }));
+  const fmt = opts.fmt || ((v) => fmtInt(v));
+  svg.append(svgEl('text', { x: Math.min(W - padR - 20, Math.max(padL + 20, X(peak))), y: Y(values[peak]) - 6, 'text-anchor': 'middle', class: 'vlabel' }, fmt(values[peak])));
+  if (opts.labels) {
+    svg.append(svgEl('text', { x: padL, y: H - 4, 'text-anchor': 'start' }, opts.labels[0]));
+    svg.append(svgEl('text', { x: W - padR, y: H - 4, 'text-anchor': 'end' }, opts.labels[opts.labels.length - 1]));
+  }
+  const dot = svgEl('circle', { r: 3.5, fill: 'var(--series-blue)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' });
+  svg.append(dot);
+  svg.addEventListener('mousemove', (e) => {
+    const r = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left) * (W / r.width) - padL) / iw * (n - 1))));
+    dot.setAttribute('cx', X(i)); dot.setAttribute('cy', Y(values[i])); dot.setAttribute('visibility', 'visible');
+    showTip('<b>' + esc(opts.names ? opts.names[i] : (opts.labels && opts.labels[i] != null ? opts.labels[i] : '#' + (i + 1))) + '</b><br>' + fmt(values[i]) + (opts.unit ? ' ' + opts.unit : ''), e.clientX, e.clientY);
+  });
+  svg.addEventListener('mouseleave', () => { dot.setAttribute('visibility', 'hidden'); hideTip(); });
+  wrap.append(svg);
+}
+function dCalendar(body, year, dayMap, opts = {}) { // one year, 53 columns by 7 rows, Monday first
+  const wrap = el('div', 'colwrap'); body.append(wrap);
+  const W = boxW(body, 480, 900), padL = 28, padT = 16, padB = 4;
+  const cw = (W - padL - 4) / 53, ch = cw;
+  const H = padT + ch * 7 + padB;
+  const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'tiny' });
+  const jan1 = new Date(year, 0, 1), dec31 = new Date(year, 11, 31);
+  const startDow = (jan1.getDay() + 6) % 7;
+  let max = 0; for (const [k, v] of dayMap) if (k.startsWith(year + '-') && v > max) max = v;
+  const fmt = opts.fmt || fmtDur;
+  const monthsSeen = new Set();
+  for (let d = new Date(jan1); d <= dec31; d.setDate(d.getDate() + 1)) {
+    const idx = Math.floor((d - jan1) / 86400000);
+    const col = Math.floor((idx + startDow) / 7), row = (idx + startDow) % 7;
+    const key = dayKey(d), v = dayMap.get(key) || 0;
+    const op = v > 0 ? 0.18 + 0.82 * v / max : 0;
+    const r = svgEl('rect', { x: padL + col * cw + 0.5, y: padT + row * ch + 0.5, width: Math.max(1, cw - 1.5), height: Math.max(1, ch - 1.5), rx: 1.5, fill: v > 0 ? 'var(--accent)' : 'var(--grid)', 'fill-opacity': v > 0 ? op.toFixed(2) : 1 });
+    const dd = new Date(d);
+    r.addEventListener('mousemove', (e) => showTip('<b>' + niceDate(dd) + '</b><br>' + (v > 0 ? fmt(v) + (opts.unit ? ' ' + opts.unit : '') : 'nothing'), e.clientX, e.clientY));
+    r.addEventListener('mouseleave', hideTip);
+    svg.append(r);
+    if (d.getDate() === 1 && !monthsSeen.has(d.getMonth())) { monthsSeen.add(d.getMonth()); svg.append(svgEl('text', { x: padL + col * cw, y: padT - 5, 'text-anchor': 'start' }, MONTHS[d.getMonth()])); }
+  }
+  for (const [i, lab] of [[0, 'Mon'], [3, 'Thu'], [6, 'Sun']]) svg.append(svgEl('text', { x: padL - 4, y: padT + i * ch + ch / 2 + 3, 'text-anchor': 'end' }, lab));
+  wrap.append(svg);
+}
+function dClock(body, values, opts = {}) { // 24 radial bars on a dial
+  const wrap = el('div', 'clockwrap'); body.append(wrap);
+  const S = boxW(body, 180, 280), c = S / 2, r0 = 22, r1 = S / 2 - 30;
+  const max = Math.max(...values, 0.000001);
+  const svg = svgEl('svg', { width: S, height: S, viewBox: `0 0 ${S} ${S}`, class: 'tiny' });
+  svg.append(svgEl('circle', { cx: c, cy: c, r: r1, fill: 'none', stroke: 'var(--grid)', 'stroke-width': 1 }));
+  svg.append(svgEl('circle', { cx: c, cy: c, r: r0, fill: 'none', stroke: 'var(--baseline)', 'stroke-width': 1 }));
+  const fmt = opts.fmt || ((v) => fmtInt(v));
+  for (let h = 0; h < 24; h++) {
+    const a0 = (h / 24) * 2 * Math.PI - Math.PI / 2 + 0.03, a1 = ((h + 1) / 24) * 2 * Math.PI - Math.PI / 2 - 0.03;
+    const len = r0 + (values[h] > 0 ? Math.max(3, values[h] / max * (r1 - r0)) : 0);
+    const P = (a, r) => [(c + r * Math.cos(a)).toFixed(2), (c + r * Math.sin(a)).toFixed(2)].join(' ');
+    const d = `M ${P(a0, r0)} L ${P(a0, len)} A ${len} ${len} 0 0 1 ${P(a1, len)} L ${P(a1, r0)} A ${r0} ${r0} 0 0 0 ${P(a0, r0)} Z`;
+    const path = svgEl('path', { d, fill: values[h] > 0 ? 'var(--accent)' : 'var(--grid)' });
+    path.addEventListener('mousemove', (e) => showTip('<b>' + hourName(h) + '</b><br>' + fmt(values[h]) + (opts.unit ? ' ' + opts.unit : ''), e.clientX, e.clientY));
+    path.addEventListener('mouseleave', hideTip);
+    svg.append(path);
+  }
+  svg.append(svgEl('text', { x: c, y: c - r1 - 8, 'text-anchor': 'middle' }, '12am'));
+  svg.append(svgEl('text', { x: c + r1 + 5, y: c + 3, 'text-anchor': 'start' }, '6am'));
+  svg.append(svgEl('text', { x: c, y: c + r1 + 14, 'text-anchor': 'middle' }, 'noon'));
+  svg.append(svgEl('text', { x: c - r1 - 5, y: c + 3, 'text-anchor': 'end' }, '6pm'));
+  wrap.append(svg);
+}
+function dVersus(body, a, b, opts = {}) { // two labeled values, one split bar
+  const wrap = el('div', 'versus');
+  const sum = (a.v || 0) + (b.v || 0);
+  const pa = sum > 0 ? (a.v || 0) / sum : 0.5;
+  const top = el('div', 'vlabels');
+  const la = el('div', 'vl' + (pa >= 0.5 ? ' win' : '')); la.append(el('div', 'vname', a.label), el('div', 'vval', a.val != null ? a.val : fmtInt(a.v)));
+  const lb = el('div', 'vl right' + (pa < 0.5 ? ' win' : '')); lb.append(el('div', 'vname', b.label), el('div', 'vval', b.val != null ? b.val : fmtInt(b.v)));
+  top.append(la, lb);
+  const bar = el('div', 'vbar');
+  const sa = el('div', 'vseg a'); sa.style.width = (pa * 100).toFixed(1) + '%';
+  const sb = el('div', 'vseg b'); sb.style.width = ((1 - pa) * 100).toFixed(1) + '%';
+  bar.append(sa, sb);
+  wrap.append(top, bar);
+  body.append(wrap);
+  if (opts.note) { const d = el('div', 'meternote'); d.innerHTML = opts.note; body.append(d); }
+}
+function dStack(body, segs, opts = {}) { // 100 percent stacked bar with a legend, top 5 plus other
+  const COLORS = ['var(--accent)', 'var(--series-blue)', 'var(--series-magenta)', 'var(--series-yellow)', 'var(--accent-deep)', 'var(--baseline)'];
+  const sorted = segs.filter(s => s.v > 0).sort((x, y) => y.v - x.v);
+  const shown = sorted.slice(0, 5);
+  const rest = sorted.slice(5).reduce((s, x) => s + x.v, 0);
+  if (rest > 0) shown.push({ label: 'Other', v: rest });
+  const sum = shown.reduce((s, x) => s + x.v, 0) || 1;
+  const bar = el('div', 'stackbar');
+  const leg = el('div', 'legend');
+  const fmt = opts.fmt || ((v) => (v / sum * 100).toFixed(v / sum >= 0.1 ? 0 : 1) + '%');
+  shown.forEach((s, i) => {
+    const seg = el('div', 'sseg'); seg.style.width = (s.v / sum * 100).toFixed(2) + '%'; seg.style.background = COLORS[i];
+    seg.addEventListener('mousemove', (e) => showTip('<b>' + esc(s.label) + '</b><br>' + fmt(s.v) + (opts.unit ? ' ' + opts.unit : ''), e.clientX, e.clientY));
+    seg.addEventListener('mouseleave', hideTip);
+    bar.append(seg);
+    const li = el('div', 'li'); const dot = el('span', 'ldot'); dot.style.background = COLORS[i];
+    li.append(dot, el('span', 'lname', s.label), el('span', 'lval', fmt(s.v)));
+    leg.append(li);
+  });
+  body.append(bar, leg);
+}
+function dTimeline(body, events, opts = {}) { // dots on a date axis; events [{t: Date, label, sub}]
+  const wrap = el('div', 'colwrap'); body.append(wrap);
+  const evs = events.filter(e => e && e.t).sort((x, y) => x.t - y.t).slice(0, 10);
+  if (!evs.length) return;
+  const t0 = (opts.start || evs[0].t).getTime(), t1 = (opts.end || evs[evs.length - 1].t).getTime();
+  const span = Math.max(1, t1 - t0);
+  const W = boxW(body, 300, 900), H = 128, padL = 16, padR = 16, yLine = 64;
+  const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'tiny' });
+  svg.append(svgEl('line', { x1: padL, y1: yLine + .5, x2: W - padR, y2: yLine + .5, stroke: 'var(--baseline)', 'stroke-width': 1 }));
+  const y0 = new Date(t0).getFullYear(), y1 = new Date(t1).getFullYear();
+  if (y1 > y0) for (let y = y0 + 1; y <= y1; y++) {
+    const x = padL + (new Date(y, 0, 1).getTime() - t0) / span * (W - padL - padR);
+    if (x > padL && x < W - padR) { svg.append(svgEl('line', { x1: x, y1: yLine - 4, x2: x, y2: yLine + 4, stroke: 'var(--grid)', 'stroke-width': 1 })); svg.append(svgEl('text', { x, y: H - 2, 'text-anchor': 'middle' }, String(y))); }
+  }
+  const maxChars = W < 420 ? 14 : 22;
+  const slots = [{ dy: -20, tick: -14, right: -1e9 }, { dy: 26, tick: 14, right: -1e9 }, { dy: -38, tick: -32, right: -1e9 }, { dy: 44, tick: 32, right: -1e9 }];
+  evs.forEach((e) => {
+    const x = padL + (e.t.getTime() - t0) / span * (W - padL - padR);
+    const label = (e.label || '').length > maxChars ? e.label.slice(0, maxChars - 1) + '…' : (e.label || '');
+    const lw = label.length * 6.2;
+    const anchor = x - lw / 2 < padL ? 'start' : x + lw / 2 > W - padR ? 'end' : 'middle';
+    const left = anchor === 'start' ? x : anchor === 'end' ? x - lw : x - lw / 2;
+    let slot = slots.find(sl => left > sl.right + 8) || slots[0];
+    slot.right = left + lw;
+    svg.append(svgEl('line', { x1: x, y1: yLine, x2: x, y2: yLine + slot.tick, stroke: 'var(--grid)', 'stroke-width': 1 }));
+    const dot = svgEl('circle', { cx: x, cy: yLine, r: 5, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2 });
+    dot.addEventListener('mousemove', (ev) => showTip('<b>' + esc(e.label) + '</b><br>' + niceDate(e.t) + (e.sub ? '<br>' + esc(e.sub) : ''), ev.clientX, ev.clientY));
+    dot.addEventListener('mouseleave', hideTip);
+    svg.append(dot);
+    svg.append(svgEl('text', { x, y: yLine + slot.dy, 'text-anchor': anchor, class: 'vlabel' }, label));
+  });
+  wrap.append(svg);
+}
+function dCloud(body, items, opts = {}) { // words sized by weight; items [{w, v}]
+  const top = items.filter(x => x && x.w && x.v > 0).sort((x, y) => y.v - x.v).slice(0, opts.max || 28);
+  if (!top.length) return;
+  const max = top[0].v, min = top[top.length - 1].v;
+  const c = el('div', 'cloud');
+  const unit = opts.unit || 'streams';
+  top.forEach((x, i) => {
+    const s = el('span', i < 3 ? 'cw top' : 'cw', x.w);
+    const k = max > min ? Math.sqrt((x.v - min) / (max - min)) : 1;
+    s.style.fontSize = (12 + 18 * k).toFixed(1) + 'px';
+    s.addEventListener('mousemove', (e) => showTip('<b>' + esc(x.w) + '</b><br>' + fmtInt(x.v) + ' ' + unit, e.clientX, e.clientY));
+    s.addEventListener('mouseleave', hideTip);
+    c.append(s);
+  });
+  body.append(c);
+}
+function dDual(body, data, opts = {}) { // two series of columns side by side; data [{label, full, a, b}]
+  const wrap = el('div', 'colwrap'); body.append(wrap);
+  const W = boxW(body, 250, 2000), H = 190;
+  const padL = 6, padR = 6, padB = 22, padT = 18;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const n = data.length, step = iw / n;
+  const bw = Math.max(1, Math.min(opts.wide ? 16 : 10, (step - 4) / 2));
+  const max = Math.max(...data.map(d => Math.max(d.a, d.b)), 0.000001);
+  const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+  if (opts.tiny || n > 12) svg.classList.add('tiny');
+  svg.append(svgEl('line', { x1: padL, y1: H - padB + .5, x2: W - padR, y2: H - padB + .5, stroke: 'var(--baseline)', 'stroke-width': 1 }));
+  const fmt = opts.fmt || ((v) => fmtInt(v));
+  data.forEach((d, i) => {
+    const x0 = padL + i * step + step / 2 - bw - 1;
+    const ha = Math.max(d.a > 0 ? 2 : 0, d.a / max * ih), hb = Math.max(d.b > 0 ? 2 : 0, d.b / max * ih);
+    svg.append(svgEl('path', { d: roundTopRect(x0, H - padB - ha, bw, ha, Math.min(3, bw / 2)), fill: 'var(--accent)' }));
+    svg.append(svgEl('path', { d: roundTopRect(x0 + bw + 2, H - padB - hb, bw, hb, Math.min(3, bw / 2)), fill: 'var(--series-blue)' }));
+    if (d.label) svg.append(svgEl('text', { x: padL + i * step + step / 2, y: H - 7, 'text-anchor': 'middle' }, d.label));
+    const hit = svgEl('rect', { x: padL + i * step, y: padT, width: step, height: ih + padB, fill: 'transparent' });
+    hit.addEventListener('mousemove', (e) => showTip('<b>' + esc(d.full || d.label) + '</b><br>' + esc(opts.aLabel || 'A') + ': ' + fmt(d.a) + (opts.unit ? ' ' + opts.unit : '') + '<br>' + esc(opts.bLabel || 'B') + ': ' + fmt(d.b) + (opts.unit ? ' ' + opts.unit : ''), e.clientX, e.clientY));
+    hit.addEventListener('mouseleave', hideTip);
+    svg.append(hit);
+  });
+  wrap.append(svg);
+  const leg = el('div', 'legend row');
+  for (const [col, lab] of [['var(--accent)', opts.aLabel || 'A'], ['var(--series-blue)', opts.bLabel || 'B']]) {
+    const li = el('div', 'li'); const dot = el('span', 'ldot'); dot.style.background = col; li.append(dot, el('span', 'lname', lab)); leg.append(li);
+  }
+  body.append(leg);
+}
+function dBarcode(body, values, opts = {}) { // one thin tick per value, opacity by size
+  const wrap = el('div', 'colwrap'); body.append(wrap);
+  const n = values.length; if (!n) return;
+  const W = Math.max(Math.min(n, 365), boxW(body, 200, 900)), H = opts.h || 46;
+  const max = Math.max(...values, 0.000001);
+  const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'tiny' });
+  const tw = W / n;
+  const fmt = opts.fmt || ((v) => fmtInt(v));
+  values.forEach((v, i) => {
+    const r = svgEl('rect', { x: (i * tw).toFixed(2), y: 0, width: Math.max(0.6, tw - 0.4).toFixed(2), height: H - (opts.labels ? 14 : 0), fill: v > 0 ? 'var(--accent)' : 'var(--grid)', 'fill-opacity': v > 0 ? (0.15 + 0.85 * v / max).toFixed(2) : 1 });
+    r.addEventListener('mousemove', (e) => showTip('<b>' + esc(opts.names ? opts.names[i] : '#' + (i + 1)) + '</b><br>' + (v > 0 ? fmt(v) + (opts.unit ? ' ' + opts.unit : '') : 'nothing'), e.clientX, e.clientY));
+    r.addEventListener('mouseleave', hideTip);
+    svg.append(r);
+  });
+  if (opts.labels) { svg.append(svgEl('text', { x: 0, y: H - 2, 'text-anchor': 'start' }, opts.labels[0])); svg.append(svgEl('text', { x: W, y: H - 2, 'text-anchor': 'end' }, opts.labels[opts.labels.length - 1])); }
+  wrap.append(svg);
+}
+function dSlider(body, cfg, onChange) { // a range input that drives a result; onChange(value, resultDiv, readout)
+  const row = el('div', 'sliderrow');
+  const input = el('input'); input.type = 'range'; input.min = cfg.min; input.max = cfg.max; input.step = cfg.step || 1; input.value = cfg.value != null ? cfg.value : cfg.min;
+  input.setAttribute('aria-label', cfg.label || 'value');
+  const out = el('div', 'sliderout');
+  row.append(input, out);
+  const res = el('div');
+  body.append(row, res);
+  const fmt = cfg.fmt || ((v) => String(v));
+  const go = () => { const v = Number(input.value); out.textContent = fmt(v); res.innerHTML = ''; onChange(v, res); };
+  input.addEventListener('input', go);
+  go();
+  return { input, res };
+}
+function dGuess(body, cfg) { // the user guesses a number, then the truth is revealed
+  const q = el('div', 'sentence'); q.innerHTML = cfg.prompt; body.append(q);
+  const input = el('input'); input.type = 'number'; input.inputMode = 'numeric'; input.placeholder = cfg.placeholder || 'your guess'; input.min = 0;
+  const res = el('div', 'guessres');
+  const fmt = cfg.fmt || ((v) => fmtInt(v));
+  const go = () => {
+    res.innerHTML = '';
+    const g = Number(input.value);
+    if (!input.value || isNaN(g)) return;
+    const actual = cfg.actual;
+    const off = actual === 0 ? (g === 0 ? 0 : 1) : Math.abs(g - actual) / actual;
+    const verdict = off === 0 ? 'Exactly right. Suspicious.' : off <= 0.1 ? 'Uncomfortably close.' : off <= 0.35 ? 'In the neighbourhood.' : off <= 1 ? 'Not the same postal code.' : g > actual ? 'You think too much of yourself.' : 'You think too little of yourself.';
+    const n = el('div', 'bignum'); n.textContent = fmt(actual); if (cfg.unit) n.append(el('small', null, cfg.unit));
+    res.append(n);
+    dSentence(res, 'You guessed <b>' + fmt(g) + '</b>. ' + verdict + (cfg.after ? ' ' + cfg.after : ''));
+    dMeter(res, Math.min(1, g / Math.max(actual, 1)), null);
+    input.disabled = true;
+  };
+  dForm(body, input, cfg.button || 'Reveal', go, res);
+}
+function dReroll(body, fn, label) { // a button that re-rolls a random pick inside the card
+  const res = el('div');
+  const row = el('div', 'rerollrow');
+  const btn = el('button', 'ghost', label || 'Roll again'); btn.type = 'button';
+  btn.addEventListener('click', () => { res.innerHTML = ''; fn(res); });
+  row.append(btn);
+  body.append(res, row);
+  fn(res);
+}
+
 /* ---------- the deep end: stat pool ---------- */
 const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DOWS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -1455,9 +1798,12 @@ function buildPool(S, D) {
   const pickSome = (arr, k) => arr.map(x => [x, Math.random()]).sort((q, r) => q[1] - r[1]).slice(0, k).map(x => x[0]);
 
   const P = [];
-  let famTag = null;
-  const add = (w, sz, t, s, r, avail) => P.push({ w, sz, t, s, r, avail, fam: famTag });
+  let famTag = null, srcTag = null;
+  const add = (w, sz, t, s, r, avail) => P.push({ w, sz, t, s, r, avail, fam: famTag, src: srcTag });
   const fam = (name, fn) => { famTag = name; fn(); famTag = null; };
+  // memo caches a per-dataset computation on D, so a vault stat can run its own pass
+  // over the plays once and share it between avail(), the renderer, and other stats.
+  const memo = (key, fn) => { const m = D._memo || (D._memo = {}); if (!(key in m)) m[key] = fn(); return m[key]; };
 
   /* ===== tier 1: the normal ones ===== */
   add(1, 6, 'The artist alphabet', 'streams by first letter', (b) => dAlphabet(b, D.artistLetter));
@@ -2024,8 +2370,22 @@ function buildPool(S, D) {
     }
   });
 
+  /* ===== the vault: registered batches ===== */
+  const ctx = { S, D, add, fam, memo, total, streams, hasSkip, pct1, nameOf, titleOf, topTrackOf, rint, pickSome, music: D.music, plays: D.plays };
+  for (const v of VAULT) {
+    srcTag = v.name;
+    try { v.fn(ctx); } catch (err) { console.warn('vault batch failed:', v.name, err); }
+    srcTag = null;
+  }
   return P;
 }
+
+/* ---------- the vault registry ---------- */
+// Each batch is a function that receives the pool context and calls add() for its
+// stats. Keeping batches separate from buildPool keeps the file navigable as the
+// vault grows; a batch that throws is skipped, not fatal.
+const VAULT = [];
+function vault(name, fn) { VAULT.push({ name, fn }); }
 
 
 /* ---------- dealing and progressive rendering ---------- */
@@ -2062,6 +2422,7 @@ function dealDeep() {
   if (pumpTimer) { clearTimeout(pumpTimer); pumpTimer = null; }
 
   const pool = buildPool(S, D).filter(e => { try { return !e.avail || e.avail(); } catch (err) { return false; } });
+  curPool = pool; onPage = new Set();
   const famSeen = {};
   const shuffled = pool.map(e => ({ e, k: Math.random() })).sort((a, b) => a.k - b.k).map(x => x.e);
   const picked = [];
@@ -2094,21 +2455,16 @@ function dealDeep() {
 
   dealCount = picked.length;
   for (const blk of picked) {
-    const card = el('div', 'card dcard');
-    card.dataset.sz = blk.sz;
-    card.append(el('h3', null, blk.t));
-    if (blk.s) card.append(el('div', 'cardsub', blk.s));
-    const body = el('div');
-    card.append(body);
-    card._fill = () => blk.r(body);
+    const card = makeCard(blk);
     wrap.append(card);
     if (deepIO) deepIO.observe(card);
     fillQueue.push(card);
   }
+  $('deepNote').textContent = fmtInt(picked.length) + ' of ' + fmtInt(pool.length) + ' stats, dealt at random. The corner button swaps one out.';
 
   const fin = el('div', 'finale');
   const again = el('button', 'primary', 'Shuffle again');
-  again.addEventListener('click', () => { window.scrollTo(0, 0); dealDeep(); });
+  again.addEventListener('click', () => { scrollToDeep(); dealDeep(); });
   fin.append(again);
   wrap.append(fin);
 
@@ -2117,6 +2473,64 @@ function dealDeep() {
   for (let k = 0; k < 10 && fillQueue.length; k++) fillCard(fillQueue.shift());
   pumpTimer = setTimeout(pumpFills, 30);
 }
+
+let curPool = [], onPage = new Set();
+const SWAP_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5a5.5 5.5 0 0 1 9.6-2.4L13.5 5.5"/><path d="M13.5 2v3.5H10"/><path d="M13.5 9.5a5.5 5.5 0 0 1-9.6 2.4L2.5 10.5"/><path d="M2.5 14v-3.5H6"/></svg>';
+function makeCard(blk) {
+  const card = el('div', 'card dcard');
+  card.dataset.sz = blk.sz;
+  card._blk = blk;
+  onPage.add(blk);
+  card.append(el('h3', null, blk.t));
+  if (blk.s) card.append(el('div', 'cardsub', blk.s));
+  const body = el('div');
+  card.append(body);
+  card._fill = () => blk.r(body);
+  const swap = el('button', 'swapbtn');
+  swap.type = 'button';
+  swap.title = 'Swap this one for another';
+  swap.setAttribute('aria-label', 'Swap this stat for another');
+  swap.innerHTML = SWAP_ICON;
+  swap.addEventListener('click', (e) => { e.stopPropagation(); swapCard(card); });
+  card.append(swap);
+  return card;
+}
+// Replace one card with a random unused stat. Same size class when one exists, so
+// the row keeps its shape; a family already on the page stays unique.
+function swapCard(card) {
+  const old = card._blk;
+  const fams = new Set([...onPage].filter(b => b !== old && b.fam).map(b => b.fam));
+  const free = curPool.filter(e => !onPage.has(e) && !(e.fam && fams.has(e.fam)));
+  if (!free.length) return;
+  const same = free.filter(e => sizeClass(e.sz) === sizeClass(old.sz));
+  const cands = same.length ? same : free;
+  const blk = cands[Math.floor(Math.random() * cands.length)];
+  onPage.delete(old);
+  const fresh = makeCard(blk);
+  fresh.classList.add('fresh');
+  fresh.style.gridColumn = card.style.gridColumn;
+  card.replaceWith(fresh);
+  fillQueue = fillQueue.filter(c => c !== card);
+  fillCard(fresh);
+  if (sizeClass(blk.sz) !== sizeClass(old.sz)) layoutDeep();
+}
+function scrollToDeep() {
+  const top = $('deepAnchor').getBoundingClientRect().top + window.scrollY - 8;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+}
+// The floating shuffle shows once the deep end is on screen, so a redeal never
+// means a trip to the bottom of 101 cards.
+(() => {
+  const btn = $('stickyShuffle');
+  btn.addEventListener('click', () => { scrollToDeep(); dealDeep(); });
+  const check = () => {
+    const on = $('dash').classList.contains('on') && $('deepList').children.length > 0 && $('deepAnchor').getBoundingClientRect().top < innerHeight * 0.6;
+    btn.classList.toggle('on', on);
+  };
+  addEventListener('scroll', check, { passive: true });
+  addEventListener('resize', check);
+  new MutationObserver(check).observe($('dash'), { attributes: true, attributeFilter: ['class'] });
+})();
 
 // Pack cards into rows that each sum to exactly the column count, so no row
 // ever leaves a hole. Three size classes: full charts get their own row (they
@@ -2169,7 +2583,18 @@ function layoutDeep() {
 let deepResizeT = null;
 addEventListener('resize', () => {
   clearTimeout(deepResizeT);
-  deepResizeT = setTimeout(() => { if ($('deepList').children.length) layoutDeep(); }, 120);
+  deepResizeT = setTimeout(() => {
+    if (!$('deepList').children.length) return;
+    layoutDeep();
+    // refit any card whose chart was drawn for a wider screen
+    for (const c of $('deepList').querySelectorAll('.dcard')) {
+      const body = c.querySelector(':scope > div');
+      const svg = body && body.querySelector('svg');
+      if (!body || c._fill || !svg || (+svg.getAttribute('width') || 0) <= c.clientWidth - 30) continue;
+      body.innerHTML = '';
+      try { c._blk.r(body); } catch (err) { console.warn('deep refit failed:', err); }
+    }
+  }, 120);
 });
 
 const CATALOG = (() => {
@@ -2415,6 +2840,9 @@ addEventListener('drop', (e) => {
 });
 
 function rerenderCharts() {
+  // clear all three first: a single-column grid sizes every row to the widest
+  // leftover chart, so re-measuring one at a time reads a stale width
+  for (const id of ['trendChart', 'hourChart', 'dowChart']) $(id).innerHTML = '';
   renderTrend(lastStats);
   renderColumns($('hourChart'), lastStats.byHour.map((ms, h) => ({ label: h % 3 === 0 ? String(h) : '', full: hourName(h), v: ms / 60000 })), { tipUnit: 'min' });
   renderColumns($('dowChart'), lastStats.byDow.map((ms, i) => ({ label: DOWS[i], full: DOWS[i], v: ms / 60000 })), { tipUnit: 'min', wide: true });
