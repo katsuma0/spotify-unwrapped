@@ -125,10 +125,42 @@
   .pchip .pn { font-weight: 650; font-size: 13.5px; }
   .pchip .pd { color: var(--muted); font-size: 12px; margin-top: 2px; }
 
-  .howto { margin-top: 26px; color: var(--ink-2); font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
-  .howto b { color: var(--ink); }
-  .howto ol { margin: 8px 0 0 18px; display: grid; gap: 4px; }
-  .howto a { color: var(--series-blue); }
+  .hint a { color: var(--series-blue); }
+
+  /* ---------- the step by step guide ---------- */
+  .guide { margin-top: 26px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 22px 18px; scroll-margin-top: 12px; }
+  .ghead h2 { font-size: 19px; font-weight: 650; letter-spacing: -0.01em; }
+  .ghead p { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
+  .steps { list-style: none; margin: 18px 0 0; padding: 0; display: grid; }
+  .step { display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding: 14px 0; border-top: 1px solid var(--border); }
+  .step:first-child { border-top: none; padding-top: 4px; }
+  .snum {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--page);
+    font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .sbody { min-width: 0; }
+  .sbody h3 { font-size: 15.5px; font-weight: 650; letter-spacing: -0.01em; line-height: 1.35; }
+  .sbody h3 b { font-weight: 650; }
+  .sbody p { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
+  .sbody p b { color: var(--ink); font-weight: 600; }
+  .sbody .sdetail { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .sbody .btnlink {
+    display: inline-block; margin-top: 10px; text-decoration: none;
+    font: 600 14px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--ink); color: var(--page); border-radius: 10px; padding: 13px 18px; min-height: 44px; box-sizing: border-box;
+  }
+  .sbody .btnlink:hover { opacity: .85; }
+  .sbody button.ghost { margin-top: 10px; }
+  .gcompare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .gcol { display: grid; gap: 4px; font-size: 13.5px; color: var(--ink-2); min-width: 0; }
+  .gc-h { font-weight: 650; color: var(--ink); font-size: 14px; margin-bottom: 2px; }
+  .gc-r { display: grid; grid-template-columns: 6px 1fr; gap: 9px; align-items: baseline; }
+  .gc-r::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-deep); position: relative; top: -1px; }
+  .sdetail b { color: var(--ink-2); font-weight: 600; }
+  @media (max-width: 560px) {
+    .guide { padding: 18px 16px 14px; }
+    .gcompare { grid-template-columns: 1fr; }
+  }
 
   #status { margin-top: 16px; font-size: 14px; color: var(--ink-2); min-height: 21px; }
   #status.err { color: #d03b3b; }
@@ -340,7 +372,7 @@
       <div class="btnrow">
         <button class="primary" id="pickBtn">Choose file…</button>
       </div>
-      <div class="hint">Works with both packages: “Account data” (last year) and “Extended streaming history” (lifetime).</div>
+      <div class="hint">Works with both packages: “Account data” (last year) and “Extended streaming history” (lifetime). <a href="#guide" id="guideLink">No file yet? Here is how to get one.</a></div>
       <div class="personas">
         <div class="plabel">No export yet? Meet the sample listeners. Five years of generated history each:</div>
         <div class="pchips" id="pchips"></div>
@@ -349,16 +381,74 @@
     <input type="file" id="fileInput" multiple accept=".zip,.json,application/zip,application/json">
     <div id="status" role="status"></div>
 
-    <div class="howto">
-      <b>How to get your file from Spotify</b> (one time, then you own your data)
-      <ol>
-        <li>Open <a href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener">spotify.com/account/privacy</a> in any browser and sign in. From the Spotify app: tap your profile picture, then Settings and privacy, then Account, then Privacy settings; it opens the same page.</li>
-        <li>Scroll to <b>Download your data</b> and tick what you want. <b>Extended streaming history</b> is the good one: your whole account lifetime, every play. <b>Account data</b> only covers the last year but arrives faster.</li>
-        <li>Tap <b>Request data</b>, then confirm in the email Spotify sends you right away.</li>
-        <li>Wait for the “your data is ready” email (about 5 days for Account data, up to 30 for Extended). Download <b>my_spotify_data.zip</b> from the link. On iPhone it lands in the Files app, in Downloads.</li>
-        <li>Come back here, tap <b>Choose file</b> above, and pick that zip. No unzipping, no uploading; it is read on your device.</li>
+    <section class="guide" id="guide" aria-labelledby="guideTitle">
+      <div class="ghead">
+        <h2 id="guideTitle">How to get your file from Spotify</h2>
+        <p>One request, two emails, one zip. Five minutes of your time, then some waiting on their end. You only do this once.</p>
+      </div>
+      <ol class="steps">
+        <li class="step">
+          <div class="snum">1</div>
+          <div class="sbody">
+            <h3>Open your Spotify privacy page</h3>
+            <p>Sign in with the account you listen on. Any browser works, phone or computer.</p>
+            <a class="btnlink" href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener">Open the privacy page</a>
+            <p class="sdetail">The address is <b>spotify.com/account/privacy</b>. From the Spotify app: tap your profile picture, then <b>Settings and privacy</b>, then <b>Account</b>, then <b>Privacy settings</b>. It opens the same page.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="snum">2</div>
+          <div class="sbody">
+            <h3>Scroll to <b>Download your data</b> and tick <b>Extended streaming history</b></h3>
+            <p>That one is your whole account, every play since day one, with skips, shuffle, albums and devices. Leave <b>Technical log information</b> off, it is not useful here.</p>
+            <p class="sdetail">In a hurry? <b>Account data</b> arrives faster but only covers the last year, with fewer fields. You can tick both.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="snum">3</div>
+          <div class="sbody">
+            <h3>Press <b>Request data</b>, then confirm the email</h3>
+            <p>Spotify emails you right away with a <b>Confirm</b> button. Nothing happens until you press it, so check spam if it has not arrived in a few minutes.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="snum">4</div>
+          <div class="sbody">
+            <h3>Wait for the “your data is ready” email</h3>
+            <p>Account data takes about 5 days. Extended streaming history takes up to 30, usually one to two weeks. The download link in that email stays live for 14 days, so grab it when it lands.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="snum">5</div>
+          <div class="sbody">
+            <h3>Download <b>my_spotify_data.zip</b></h3>
+            <p>Where it lands: on iPhone, the Files app, in Downloads. On Android, the Files app, in Downloads. On a Mac or PC, your Downloads folder. Do not unzip it.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="snum">6</div>
+          <div class="sbody">
+            <h3>Come back here and drop the zip in</h3>
+            <p>Tap <b>Choose file</b> at the top and pick <b>my_spotify_data.zip</b>, or drag it onto the page. It is read right here in your browser. Nothing is uploaded anywhere.</p>
+            <button class="ghost" type="button" id="guideUpBtn">Back to the drop zone</button>
+          </div>
+        </li>
       </ol>
-    </div>
+      <div class="gcompare">
+        <div class="gcol">
+          <div class="gc-h">Account data</div>
+          <div class="gc-r">Last 12 months</div>
+          <div class="gc-r">About 5 days</div>
+          <div class="gc-r">Hours, artists, tracks, clock, calendar, streaks, the alphabets</div>
+        </div>
+        <div class="gcol">
+          <div class="gc-h">Extended streaming history</div>
+          <div class="gc-r">Everything since you joined</div>
+          <div class="gc-r">Up to 30 days</div>
+          <div class="gc-r">All of that, plus skips, shuffle, albums, devices, podcasts, and the exact second you pressed play</div>
+        </div>
+      </div>
+    </section>
   </section>
 
   <section id="dash">
@@ -2814,7 +2904,7 @@ $('themeBtn').addEventListener('click', () => {
 const drop = $('drop');
 $('pickBtn').addEventListener('click', (e) => { e.stopPropagation(); $('fileInput').click(); });
 drop.addEventListener('click', () => $('fileInput').click());
-drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') $('fileInput').click(); });
+drop.addEventListener('keydown', (e) => { if (e.target === drop && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('fileInput').click(); } });
 for (const [key, p] of Object.entries(PERSONAS)) {
   const b = el('button', 'pchip');
   b.type = 'button';
@@ -2823,6 +2913,8 @@ for (const [key, p] of Object.entries(PERSONAS)) {
   $('pchips').append(b);
 }
 $('fileInput').addEventListener('change', (e) => { if (e.target.files.length) handleFiles([...e.target.files]); });
+$('guideLink').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); $('guide').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+$('guideUpBtn').addEventListener('click', () => { $('drop').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
 $('resetBtn').addEventListener('click', () => {
   $('dash').classList.remove('on');
   $('intro').style.display = '';
