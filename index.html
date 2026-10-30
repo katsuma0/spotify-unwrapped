@@ -2590,7 +2590,8 @@ function makeCard(blk) {
 function swapCard(card) {
   const old = card._blk;
   const fams = new Set([...onPage].filter(b => b !== old && b.fam).map(b => b.fam));
-  const free = curPool.filter(e => !onPage.has(e) && !(e.fam && fams.has(e.fam)));
+  let free = curPool.filter(e => !onPage.has(e) && !(e.fam && fams.has(e.fam)));
+  if (!free.length) free = curPool.filter(e => !onPage.has(e));   // small vault: allow a second of a family
   if (!free.length) return;
   const same = free.filter(e => sizeClass(e.sz) === sizeClass(old.sz));
   const cands = same.length ? same : free;
