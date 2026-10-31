@@ -112,7 +112,7 @@ Dashboard, after a file loads:
 - Where you listen: platform share, only when platform data exists.
 
 The deep end:
-- 101 stats dealt at random from a vault of about 470 generators, so each visit
+- 101 stats dealt at random from a vault of about 490 generators, so each visit
   and each shuffle is a different set. It is sorted from normal at the top to
   weird at the bottom. Every generator carries a weirdness weight, and the deal
   is sorted by that weight with some jitter. One line at the entrance says how

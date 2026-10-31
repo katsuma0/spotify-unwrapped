@@ -53,7 +53,7 @@ Vanilla HTML, CSS, and JS in a single `index.html`, about 8,500 lines. Zero depe
 ## The deep end
 
 The bottom half of the dashboard deals 101 cards at random from a vault of about
-470 generators. The core pool lives in `buildPool`; everything after it is
+490 generators. The core pool lives in `buildPool`; everything after it is
 registered in batches through `vault(name, fn)`, one `/* ----- batch: name ----- */`
 section each, spliced in after the registry. A batch gets a context object
 (`S`, `D`, `add`, `fam`, `memo`, formatters) and calls `add(w, sz, title,

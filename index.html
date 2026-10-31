@@ -6886,6 +6886,498 @@ vault('visual', (c) => {
   }, () => !!topName && S.topArtists[0].ms >= 10 * HOUR);
 });
 
+/* ----- batch: stats ----- */
+// stats: the measures a statistics graduate would run on a listening ledger, each with its plain reading.
+// Conventions: a stream is a play with ms >= 30000; active days are days with any listening;
+// a calendar day series runs from S.first to S.last with silent days at 0; population moments throughout;
+// lower middle for an even-n median; sessions follow computeDeep (a gap over 30 minutes between starts).
+vault('stats', (c) => {
+  const { S, D, add, fam, memo, total, streams, hasSkip, pct1, nameOf, titleOf, topTrackOf, rint, pickSome, music, plays } = c;
+  const MIN = 60000, DAY = 86400000;
+  const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return fmtInt(n) + (s[(v - 20) % 10] || s[v] || s[0]); };
+  // rd rounds to d decimals (bands are judged on the rounded value the card shows); fx prints it without a -0.00
+  const rd = (x, d) => Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+  const fx = (x, d) => { const r = rd(x, d); return (r === 0 ? 0 : r).toFixed(d); };
+  const signed = (x, d) => { const r = rd(x, d); return (r > 0 ? '+' : r < 0 ? '-' : '') + Math.abs(r).toFixed(d); };
+  const spanDays = () => S.first ? (S.last - S.first) / DAY : 0;
+  const multiyear = () => S.first && spanDays() >= 730;
+  const byName = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  const sum = (arr) => arr.reduce((a, x) => a + x, 0);
+
+  // calendar and active day series from S.byDay, in minutes
+  const DAILY = () => memo('stats.daily', () => {
+    const cal = [], act = [];
+    if (S.first) {
+      const d1 = dayKey(S.last);
+      for (let d = new Date(dayKey(S.first) + 'T12:00:00'); cal.length < 40000; d.setDate(d.getDate() + 1)) {
+        const dk = dayKey(d), ms = S.byDay.get(dk) || 0;
+        cal.push({ dk, min: ms / MIN });
+        if (ms > 0) act.push(ms / MIN);
+        if (dk === d1) break;
+      }
+    }
+    const n = act.length;
+    const sorted = act.slice().sort((a, b) => a - b);
+    const mean = n ? sum(act) / n : 0;
+    let m2 = 0, m3 = 0, m4 = 0;
+    for (const x of act) { const dx = x - mean; m2 += dx * dx; m3 += dx * dx * dx; m4 += dx * dx * dx * dx; }
+    if (n) { m2 /= n; m3 /= n; m4 /= n; }
+    return { cal, T: cal.length, act, sorted, n, mean, m2, m3, m4, sd: Math.sqrt(m2), median: n ? sorted[Math.floor((n - 1) / 2)] : 0 };
+  });
+
+  // one pass over the music: streams per day, last stream per listening day, sessions, transitions, years, first plays
+  const MAIN = () => memo('stats.main', () => {
+    const spd = new Map(), lastMin = new Map(), sessions = [], transA = [], transB = [];
+    const yearArtist = new Map(), yearStreams = new Map(), first = new Map(), early90 = new Map();
+    let sesStart = null, prevPlay = null, prevStream = null;
+    for (const p of music) {
+      if (prevPlay) {
+        if (p.t - prevPlay.t > 30 * MIN) { sessions.push(prevPlay.t.getTime() + prevPlay.ms - sesStart); sesStart = p.t.getTime(); }
+      } else sesStart = p.t.getTime();
+      prevPlay = p;
+      if (p.ms < 30000) continue;
+      bump(spd, dayKey(p.t));
+      lastMin.set(dayKey(new Date(p.t.getTime() - 4 * 3600000)), p.t.getHours() * 60 + p.t.getMinutes());
+      if (prevStream && p.t - prevStream.t <= 30 * MIN) { transA.push(prevStream.artist); transB.push(p.artist); }
+      prevStream = p;
+      const y = p.t.getFullYear();
+      if (!yearArtist.has(y)) yearArtist.set(y, new Map());
+      bump(yearArtist.get(y), p.artist);
+      bump(yearStreams, y);
+      const tk = tkey(p.track, p.artist), f = first.get(tk);
+      if (f === undefined) { first.set(tk, p.t.getTime()); bump(early90, tk); }
+      else if (p.t.getTime() - f <= 90 * DAY) bump(early90, tk);
+    }
+    if (prevPlay) sessions.push(prevPlay.t.getTime() + prevPlay.ms - sesStart);
+    return { spd, lastMin, sessions, transA, transB, yearArtist, yearStreams, first, early90 };
+  });
+
+  // distributions over artists and tracks, plus the two walks over D.allStreams
+  const DIST = () => memo('stats.dist', () => {
+    const N = S.streams;
+    const ax = [];
+    for (const a of S.byArtist.values()) if (a.plays >= 1) ax.push(a.plays);
+    ax.sort((a, b) => a - b);
+    const nA = ax.length, T = sum(ax);
+    let wsum = 0, cum = 0; const lor = [0];
+    for (let i = 0; i < nA; i++) { wsum += (i + 1) * ax[i]; cum += ax[i]; lor.push(cum); }
+    const gini = nA && T ? (2 * wsum) / (nA * T) - (nA + 1) / nA : 0;
+    let sumSq = 0;
+    if (N) for (const x of ax) { const s = x / N; sumSq += s * s; }
+    const tr = [...S.byTrack.values()].filter(t => t.plays >= 1).sort((a, b) => b.plays - a.plays || b.ms - a.ms || byName(a.name, b.name));
+    let pairs = 0, onePlay = 0, H = 0;
+    for (const t of tr) { pairs += t.plays * (t.plays - 1); if (t.plays === 1) onePlay++; if (N) { const p = t.plays / N; H -= p * Math.log2(p); } }
+    const artistsByPlays = [...S.byArtist.values()].filter(a => a.plays >= 1).sort((a, b) => b.plays - a.plays || b.ms - a.ms || byName(a.name, b.name));
+    // Heaps: distinct tracks after every hundredth of the ledger
+    const all = D.allStreams, tot = all.length;
+    const seen = new Set(), marks = [];
+    const Ns = []; for (let i = 1; i <= 100; i++) Ns.push(Math.round(i / 100 * tot));
+    let mi = 0;
+    for (let i = 0; i < tot; i++) { seen.add(all[i][1]); while (mi < 100 && Ns[mi] === i + 1) { marks.push([i + 1, seen.size]); mi++; } }
+    // birthday: from 100 start points, streams until a track first seen since that start comes back
+    const walks = [];
+    for (let s0 = 0; s0 < 100; s0++) {
+      const s = Math.floor(s0 / 100 * tot), ss = new Set();
+      for (let i = s; i < tot && i - s < 20000; i++) {
+        const k = all[i][1];
+        if (ss.has(k)) { walks.push({ n: i - s + 1, tk: k, t: all[i][0], start: all[s][0] }); break; }
+        ss.add(k);
+      }
+    }
+    walks.sort((a, b) => a.n - b.n || a.start - b.start);
+    return { N, ax, nA, T, lor, gini, sumSq, tr, pairs, onePlay, H, artistsByPlays, tot, marks, walks, medWalk: walks.length ? walks[Math.floor((walks.length - 1) / 2)] : null };
+  });
+
+  // the one song that burned brightest early, and the ages of all its streams
+  const HALF = () => memo('stats.half', () => {
+    if (!S.last) return null;
+    const M = MAIN(), lastT = S.last.getTime();
+    let best = null;
+    for (const [tk, f] of M.first) {
+      if (lastT - f < 365 * DAY) continue;
+      const t = S.byTrack.get(tk); if (!t || t.plays < 30) continue;
+      const e = M.early90.get(tk) || 0;
+      if (!best || e > best.e || (e === best.e && (t.plays > best.plays || (t.plays === best.plays && byName(t.name, best.name) < 0)))) best = { tk, e, plays: t.plays, name: t.name, f };
+    }
+    if (!best) return null;
+    const ages = [];
+    for (const p of music) { if (p.ms < 30000 || tkey(p.track, p.artist) !== best.tk) continue; ages.push((p.t.getTime() - best.f) / DAY); }
+    const n = ages.length; if (!n) return null;
+    const meanA = sum(ages) / n;
+    const weeks = new Array(26).fill(0);
+    for (const a of ages) { const w = Math.floor(a / 7); if (w >= 0 && w < 26) weeks[w]++; }
+    const window = (lastT - best.f) / DAY;
+    return { tk: best.tk, name: best.name, n, meanA, half: Math.round(Math.LN2 * meanA), obs: Math.ceil(ages[Math.ceil(n / 2) - 1]), weeks, window, censored: meanA > window / 4 };
+  });
+
+  // first-order Markov chain over artists, fitted on the first half of the transitions, scored on the second
+  const ORACLE = () => memo('stats.oracle', () => {
+    const M = MAIN(), N = M.transA.length;
+    if (N < 500) return { N };
+    const half = Math.floor(N / 2), counts = new Map(), nextAll = new Map();
+    for (let i = 0; i < N; i++) {
+      bump(nextAll, M.transB[i]);
+      if (i < half) { let m = counts.get(M.transA[i]); if (!m) { m = new Map(); counts.set(M.transA[i], m); } bump(m, M.transB[i]); }
+    }
+    const base = topOf(nextAll);
+    const guess = new Map(); for (const [a, m] of counts) guess.set(a, topOf(m)[0]);
+    let hit = 0, baseHit = 0;
+    for (let i = half; i < N; i++) {
+      const g = guess.has(M.transA[i]) ? guess.get(M.transA[i]) : base[0];
+      if (g === M.transB[i]) hit++;
+      if (M.transB[i] === base[0]) baseHit++;
+    }
+    const test = N - half;
+    return { N, half, test, score: hit / test, baseName: base[0], baseScore: baseHit / test };
+  });
+
+  // The Gini coefficient
+  add(2, 4, 'The Gini coefficient', 'how unequal your artists are', (b) => {
+    const X = DIST(), n = X.nA, T = X.T;
+    const pts = [];
+    for (let j = 0; j < 50; j++) pts.push(X.lor[Math.round(j / 49 * n)] / T * 100);
+    dSpark(b, pts, { fmt: (v) => Math.round(v) + '%', unit: 'of streams', diag: true, max: 100, labels: ['smallest artists', 'biggest artists'], names: pts.map((v, j) => 'bottom ' + Math.round(j / 49 * 100) + '% of artists') });
+    const pos = 0.8 * n, i0 = Math.floor(pos), fr = pos - i0;
+    const L80 = (X.lor[i0] + fr * ((X.lor[Math.min(n, i0 + 1)] || X.lor[i0]) - X.lor[i0])) / T;
+    const g = rd(X.gini, 2);
+    const verdict = g >= 0.6 ? 'You are nowhere near it.' : g >= 0.3 ? 'You are some way off it.' : 'You are closer to it than most.';
+    dSentence(b, 'Your top 20% of artists hold <b>' + Math.round((1 - L80) * 100) + '%</b> of your streams. Gini <b>' + g.toFixed(2) + '</b>: 0 is every artist equal, 1 is one artist takes everything. The diagonal is what fairness would look like. ' + verdict);
+  }, () => S.streams >= 100 && DIST().nA >= 20 && DIST().T >= 100);
+
+  // Zipf's exponent
+  add(3, 3, 'Zipf’s exponent', 'plays against rank, log against log', (b) => {
+    const tr = DIST().tr;
+    let R = Math.min(200, tr.length);
+    while (R > 0 && tr[R - 1].plays < 3) R--;
+    const xs = [], ys = [];
+    for (let r = 1; r <= R; r++) { xs.push(Math.log(r)); ys.push(Math.log(tr[r - 1].plays)); }
+    const xbar = sum(xs) / R, ybar = sum(ys) / R;
+    let sxy = 0, sxx = 0, sst = 0;
+    for (let i = 0; i < R; i++) { sxy += (xs[i] - xbar) * (ys[i] - ybar); sxx += (xs[i] - xbar) ** 2; sst += (ys[i] - ybar) ** 2; }
+    const s0 = sxy / sxx, a = ybar - s0 * xbar;
+    let ssr = 0; for (let i = 0; i < R; i++) ssr += (ys[i] - (a + s0 * xs[i])) ** 2;
+    const s = rd(s0, 2), r2 = rd(1 - ssr / sst, 2);
+    const band = s <= -1.1 ? 'Yours is steeper than Zipf: the head is heavier than the law.' : s < -0.9 ? 'Yours is textbook Zipf.' : 'Yours is flatter than Zipf: your tail is fatter than the law allows.';
+    const fit = r2 >= 0.9 ? 'so the law still fits' : r2 >= 0.7 ? 'so the fit is loose' : 'so the fit is poor';
+    dBig(b, fx(s, 2), '', 'Over your top ' + fmtInt(R) + ' songs. A textbook Zipf is -1.00. ' + band + ' r² ' + fx(r2, 2) + ', ' + fit + '.');
+  }, () => {
+    const tr = DIST().tr; let R = Math.min(200, tr.length);
+    while (R > 0 && tr[R - 1].plays < 3) R--;
+    if (R < 50) return false;
+    const lp = tr.slice(0, R).map(t => Math.log(t.plays)), m = sum(lp) / R;
+    return lp.some(v => Math.abs(v - m) > 1e-9);
+  });
+
+  // Benford's law
+  add(4, 4, 'Benford’s law', 'leading digits of your play counts', (b) => {
+    const tr = DIST().tr, all = tr.length;
+    const big = tr.filter(t => t.plays >= 10), nb = big.length;
+    const cntAll = new Array(10).fill(0), cnt = new Array(10).fill(0);
+    for (const t of tr) cntAll[+String(t.plays)[0]]++;
+    for (const t of big) cnt[+String(t.plays)[0]]++;
+    const E = (d) => Math.log10(1 + 1 / d);
+    let chi = 0, worst = 1, worstGap = -1;
+    const data = [];
+    for (let d = 1; d <= 9; d++) {
+      const o = cnt[d] / nb, e = E(d);
+      chi += (o - e) ** 2 / e;
+      if (Math.abs(o - e) > worstGap) { worstGap = Math.abs(o - e); worst = d; }
+      data.push({ label: String(d), full: 'Leading digit ' + d, a: o * 100, b: e * 100 });
+    }
+    chi *= nb;
+    dDual(b, data, { aLabel: 'you', bLabel: 'Benford', fmt: (v) => v.toFixed(1) + '%', wide: true });
+    const o1 = cnt[1] / nb, over = cnt[worst] / nb - E(worst), all1 = cntAll[1] / all;
+    const aside = nb === all ? ' Every one of your songs has ten or more plays, so there is no one-play floor to blame.' : all1 > E(1) ? ' Over all ' + fmtInt(all) + ' songs, digit 1 takes ' + (all1 * 100).toFixed(1) + '%, because most songs got one play and stopped. That miss is the floor, not fraud.' : ' Over all ' + fmtInt(all) + ' songs, digit 1 takes ' + (all1 * 100).toFixed(1) + '%, so the floor at one play is not inflating the 1s here.';
+    dSentence(b, 'Benford wants <b>30.1%</b> of counts to start with a 1. Over your ' + fmtInt(nb) + ' songs with ten or more plays: <b>' + (o1 * 100).toFixed(1) + '%</b>. Digit ' + worst + ' is ' + Math.abs(over * 100).toFixed(1) + ' points ' + (over >= 0 ? 'over' : 'under') + '. Chi-square ' + fmtInt(chi) + ' on 8 degrees of freedom, ' + (chi > 15.51 ? 'so an auditor would have questions' : 'so an auditor would sign off') + '.' + aside);
+  }, () => DIST().tr.length >= 300 && DIST().tr.filter(t => t.plays >= 10).length >= 100);
+
+  // The Herfindahl index
+  add(3, 3, 'The Herfindahl index', 'artist concentration, antitrust scale', (b) => {
+    const X = DIST(), hhi = Math.round(10000 * X.sumSq), eff = Math.round(1 / X.sumSq);
+    const band = hhi < 1000 ? 'Under 1,000 is what a regulator calls an unconcentrated market.' : hhi <= 1800 ? 'Between 1,000 and 1,800 is what a regulator calls moderately concentrated.' : 'Over 1,800 is what a regulator calls highly concentrated.';
+    dBig(b, fmtInt(hhi), '', band + ' Your listening behaves like <b>' + fmtInt(eff) + ' equal-sized artists</b>, even though ' + fmtInt(X.nA) + ' have had a turn.');
+  }, () => S.streams >= 200 && DIST().nA >= 10 && DIST().sumSq > 0);
+
+  // Two at random
+  add(4, 3, 'Two at random', 'the odds two of your streams are the same song', (b) => {
+    const X = DIST(), N = X.N, p = X.pairs / (N * (N - 1));
+    const top = X.tr[0], share = top.plays * (top.plays - 1) / X.pairs;
+    dSentence(b, 'Pick two of your <b>' + fmtInt(N) + '</b> streams at random. The odds they are the same song: <b>1 in ' + fmtInt(Math.round(1 / p)) + '</b>. <b>' + esc(top.name) + '</b> alone supplies ' + Math.round(share * 100) + '% of that chance. Simpson’s index, if you want to look it up.');
+  }, () => S.streams >= 500 && DIST().pairs > 0);
+
+  // How weekly you are
+  add(3, 4, 'How weekly you are', 'autocorrelation of daily minutes, lags 1 to 14', (b) => {
+    const cal = DAILY().cal, T = cal.length;
+    const P = [0]; for (const d of cal) P.push(P[P.length - 1] + d.min);
+    const y = [];
+    for (let t = 0; t < T; t++) { const lo = Math.max(0, t - 14), hi = Math.min(T, t + 14); y.push(cal[t].min - (P[hi] - P[lo]) / (hi - lo)); }
+    const m = sum(y) / T;
+    let den = 0; for (const v of y) den += (v - m) ** 2;
+    const r = [0];
+    for (let k = 1; k <= 14; k++) { let s = 0; for (let t = 0; t + k < T; t++) s += (y[t] - m) * (y[t + k] - m); r.push(s / den); }
+    const sig = 1.96 / Math.sqrt(T);
+    const cols = r.slice(1).map((v, i) => ({ label: String(i + 1), full: 'Lag ' + (i + 1) + ': r = ' + signed(v, 2), v: Math.round(Math.max(0, v) * 100) }));
+    cols.push({ label: 'ref', full: 'Noise band: white noise keeps 95% of lags under ' + sig.toFixed(2), v: Math.round(sig * 100) });
+    dCols(b, cols, { tipUnit: 'hundredths' });
+    const bumpV = r[7] - (r[6] + r[8]) / 2, r7 = rd(r[7], 2);
+    const clears = r[7] > r[6] && r[7] > r[8] ? 'The bump at 7 clears both of its neighbours.' : 'The bump at 7 does not clear both of its neighbours.';
+    const band = r7 >= 0.3 ? 'Your weeks rhyme.' : r7 >= 0.1 ? 'A faint weekly pulse.' : 'No weekly rhythm to speak of.';
+    dSentence(b, 'Lag 7: <b>' + fx(r7, 2) + '</b>, a bump of ' + signed(bumpV, 2) + ' over lags 6 and 8. Lag 1: ' + fx(r[1], 2) + '. A 28-day moving average is taken out first, so slow drift does not count, and the column marked ref is the noise band: anything under ' + sig.toFixed(2) + ' is what white noise would do at ' + fmtInt(T) + ' days. ' + clears + ' ' + band);
+  }, () => {
+    const Dd = DAILY(); if (Dd.T < 60) return false;
+    const m = sum(Dd.cal.map(d => d.min)) / Dd.T;
+    return Dd.cal.some(d => Math.abs(d.min - m) > 1e-9);
+  });
+
+  // The coefficient of variation
+  add(3, 2, 'The coefficient of variation', 'how much a typical day misses your average', (b) => {
+    const Dd = DAILY(), cv = Math.round(Dd.sd / Dd.mean * 100);
+    const band = cv < 50 ? 'Steady.' : cv <= 100 ? 'Moody, not chaotic.' : 'Feast or famine.';
+    dBig(b, cv + '%', '', 'On days you listened, you run <b>' + fmtInt(Dd.mean) + ' minutes</b> on average, give or take ' + fmtInt(Dd.sd) + '. ' + band);
+  }, () => DAILY().n >= 30 && DAILY().mean > 0);
+
+  // Above the median
+  add(4, 3, 'Above the median', 'your longest run of bigger-than-usual days', (b) => {
+    const Dd = DAILY(), M = Dd.median;
+    let run = 0, best = { len: 0 }, start = null;
+    for (const d of Dd.cal) {
+      if (d.min > M) { if (!run) start = d.dk; run++; if (run > best.len) best = { len: run, start, end: d.dk }; }
+      else run = 0;
+    }
+    const sameYear = best.start.slice(0, 4) === best.end.slice(0, 4);
+    const range = (sameYear ? shortDate(best.start) : niceDate(new Date(best.start + 'T12:00:00'))) + ' to ' + niceDate(new Date(best.end + 'T12:00:00'));
+    dSentence(b, '<b>' + best.len + ' days</b> in a row above your median of ' + fmtInt(M) + ' minutes, <b>' + range + '</b>. Each one a bigger day than half of all your days. Something was going on.');
+  }, () => {
+    const Dd = DAILY(); if (Dd.n < 60) return false;
+    let run = 0, best = 0;
+    for (const d of Dd.cal) { if (d.min > Dd.median) { run++; if (run > best) best = run; } else run = 0; }
+    return best >= 3;
+  });
+
+  // The percentile day
+  add(3, 6, 'The percentile day', 'slide to any percentile, meet the day that sits there', (b) => {
+    const days = S.days.filter(d => d[1] > 0).sort((x, y) => x[1] - y[1] || byName(x[0], y[0]));
+    const n = days.length;
+    dSlider(b, { min: 50, max: 99, value: 90, step: 1, fmt: (v) => 'P' + v, label: 'percentile' }, (p, res) => {
+      const i = Math.ceil(p / 100 * n) - 1, d = days[i], K = Math.round(100 / (100 - p));
+      const odds = i >= n - 1 ? 'This is your biggest day.' : 'About one day in ' + fmtInt(K) + ' is bigger.';
+      dSentence(res, 'P' + p + ': <b>' + fmtDur(d[1]) + '</b>. ' + odds + ' The day sitting exactly on the line is <b>' + niceDate(new Date(d[0] + 'T12:00:00')) + '</b>.');
+    });
+  }, () => S.days.filter(d => d[1] > 0).length >= 50);
+
+  // Half-life of a favourite
+  add(3, 4, 'Half-life of a favourite', 'how fast your biggest new song decayed', (b) => {
+    const H = HALF();
+    dSpark(b, H.weeks, { fmt: fmtInt, unit: 'plays', labels: ['week 0', 'week 25'], names: H.weeks.map((v, i) => 'week ' + i) });
+    const obsText = H.obs === 0 ? 'on the first day' : 'by day ' + fmtInt(H.obs);
+    if (H.censored) dSentence(b, '<b>' + esc(H.name) + '</b>: half of your ' + fmtInt(H.n) + ' plays were done ' + obsText + '. An exponential fit says half-life <b>' + fmtInt(H.half) + ' days</b>, but you are still playing it, so that number is a floor.');
+    else dSentence(b, '<b>' + esc(H.name) + '</b>: half-life <b>' + fmtInt(H.half) + ' days</b>. Fitted as an exponential, the rate halves every ' + fmtInt(H.half) + ' days; in practice half of your ' + fmtInt(H.n) + ' plays were done ' + obsText + '. Then the long tail, where you still live.');
+  }, () => !!HALF());
+
+  // The Poisson check
+  add(4, 2, 'The Poisson check', 'variance to mean ratio of daily stream counts', (b) => {
+    const Dd = DAILY(), M = MAIN(), T = Dd.T;
+    const cnt = Dd.cal.map(d => M.spd.get(d.dk) || 0);
+    const m = sum(cnt) / T;
+    let v = 0; for (const x of cnt) v += (x - m) ** 2; v /= T;
+    const sorted = cnt.slice().sort((a, c) => a - c);
+    const lo = sorted[Math.ceil(0.025 * T) - 1], hi = sorted[Math.ceil(0.975 * T) - 1];
+    const pLo = Math.max(0, Math.round(m - 2 * Math.sqrt(m))), pHi = Math.round(m + 2 * Math.sqrt(m));
+    dBig(b, (v / m).toFixed(1), '', 'Variance over mean. A Poisson listener sits at 1.0 and, with your mean of ' + fmtInt(m) + ' streams a day, keeps 95% of days between ' + fmtInt(pLo) + ' and ' + fmtInt(pHi) + '. Your middle 95% runs from ' + fmtInt(lo) + ' to ' + fmtInt(hi) + '.');
+  }, () => DAILY().T >= 60 && S.streams > 0);
+
+  // The bedtime wobble
+  add(5, 3, 'The bedtime wobble', 'standard deviation of your last play of the day', (b) => {
+    const L = MAIN().lastMin;
+    let C = 0, Sn = 0, n = 0;
+    for (const m of L.values()) { const th = 2 * Math.PI * m / 1440; C += Math.cos(th); Sn += Math.sin(th); n++; }
+    C /= n; Sn /= n;
+    const R = Math.sqrt(C * C + Sn * Sn);
+    const mean = ((Math.atan2(Sn, C) / (2 * Math.PI) + 1) % 1) * 1440;
+    const sdMin = Math.round(Math.sqrt(-2 * Math.log(R)) * 1440 / (2 * Math.PI));
+    const mm = Math.round(mean) % 1440;
+    dBig(b, '±' + fmtInt(sdMin), 'min', 'Your last song lands around <b>' + fmtClock(Math.floor(mm / 60), mm % 60) + '</b>, with a standard deviation of ' + fmtInt(sdMin) + ' minutes either way. Days are cut at 4am and the math is circular, so a 1am finish counts as late, not early.');
+  }, () => {
+    const L = MAIN().lastMin; if (L.size < 30) return false;
+    let C = 0, Sn = 0;
+    for (const m of L.values()) { const th = 2 * Math.PI * m / 1440; C += Math.cos(th); Sn += Math.sin(th); }
+    return Math.sqrt(C * C + Sn * Sn) / L.size >= 0.05;
+  });
+
+  // The oracle
+  add(5, 3, 'The oracle', 'how predictable your next artist is', (b) => {
+    const O = ORACLE(), diff = Math.round((O.score - O.baseScore) * 100);
+    dMeter(b, O.score, '<b>' + Math.round(O.score * 100) + '%</b> of the time the next artist is the one a first-order Markov chain would bet on, fitted on the first ' + fmtInt(O.half) + ' of your ' + fmtInt(O.N) + ' transitions and scored on the rest. Betting on <b>' + esc(O.baseName) + '</b> every time gets ' + Math.round(O.baseScore * 100) + '%. ' + (diff > 0 ? 'Knowing where you are is worth ' + fmtInt(diff) + ' points.' : 'Knowing where you are is worth nothing here.'));
+  }, () => ORACLE().N >= 500);
+
+  // Surprise, in bits
+  add(6, 3, 'Surprise, in bits', 'information content of a single stream, per track, not per artist', (b) => {
+    const X = DIST(), N = X.N, top = X.tr[0];
+    const once = X.onePlay > 0 ? 'A play of any of your ' + fmtInt(X.onePlay) + ' one-time songs carries <b>' + Math.log2(N).toFixed(1) + ' bits</b>, the most a stream can.' : 'A song played only once would carry <b>' + Math.log2(N).toFixed(1) + ' bits</b>, the most a stream can; you have none.';
+    const H = X.H, I0 = -Math.log2(top.plays / N);
+    const close = H >= 0.6 * Math.log2(N) ? 'Most of what you play, you could not have guessed.' : H > 2 * I0 ? 'A typical stream is a good deal less predictable than your top song.' : 'Most of what you play, you could have guessed.';
+    dSentence(b, 'A play of <b>' + esc(top.name) + '</b> carries <b>' + I0.toFixed(1) + ' bits</b>. ' + once + ' The average stream: <b>' + H.toFixed(1) + ' bits</b>. ' + close);
+  }, () => S.streams >= 500 && DIST().tr.length >= 50);
+
+  // The birthday paradox
+  add(6, 3, 'The birthday paradox', 'streams before your first repeat, observed vs expected', (b) => {
+    const X = DIST(), K = X.tr.length, W = X.medWalk;
+    let E = 0, term = 1;
+    for (let k = 0; k <= K && term > 1e-12; k++) { E += term; term *= 1 - k / K; }
+    const obs = W.n, exp = Math.round(E);
+    dVersus(b, { label: 'you', v: obs, val: fmtInt(obs) }, { label: 'uniform', v: exp, val: fmtInt(exp) }, { note: 'From a typical starting point, your first repeat comes at stream <b>' + fmtInt(obs) + '</b> (the median over 100 starts; from ' + niceDate(new Date(W.start)) + ' it was <b>' + esc(titleOf(W.tk)) + '</b>). A listener drawing uniformly from your ' + fmtInt(K) + ' songs would last about ' + fmtInt(exp) + '. You are not a uniform listener. Nobody is.' });
+  }, () => DIST().tr.length >= 50 && !!DIST().medWalk);
+
+  // The trend line
+  add(2, 4, 'The trend line', 'minutes per day, per year', (b) => {
+    const cal = DAILY().cal, T = cal.length;
+    const u = cal.map((d, t) => t / 365.25), x = cal.map(d => d.min);
+    const ubar = sum(u) / T, xbar = sum(x) / T;
+    let sxu = 0, suu = 0, sst = 0;
+    for (let t = 0; t < T; t++) { sxu += (u[t] - ubar) * (x[t] - xbar); suu += (u[t] - ubar) ** 2; sst += (x[t] - xbar) ** 2; }
+    const slope = sxu / suu, a = xbar - slope * ubar;
+    let ssr = 0; for (let t = 0; t < T; t++) ssr += (x[t] - (a + slope * u[t])) ** 2;
+    const r2 = sst > 0 ? 1 - ssr / sst : 0;
+    const months = new Map();
+    for (const d of cal) { const k = d.dk.slice(0, 7); const e = months.get(k) || { min: 0, days: 0 }; e.min += d.min; e.days++; months.set(k, e); }
+    const mk = [...months.keys()].sort();
+    dSpark(b, mk.map(k => months.get(k).min / months.get(k).days), { fmt: fmtInt, unit: 'min per day', labels: mk.map(k => trendLabelLong(k, true)) });
+    const fLast = a + slope * u[T - 1];
+    let ext = '';
+    const yrs = slope > 0 && fLast < 180 ? (180 - fLast) / slope : slope < 0 && fLast > 0 ? fLast / -slope : 0;
+    if (yrs > 0 && yrs <= 30) {
+      const yr = new Date(S.last.getTime() + yrs * 365.25 * DAY).getFullYear();
+      ext = slope > 0 ? ' At this rate your average day hits three hours in ' + yr + '.' : ' At this rate you go silent in ' + yr + '.';
+    }
+    const fit = r2 < 0.1 ? 'so the line is there but most days ignore it' : r2 < 0.3 ? 'so the line explains some of it' : 'so the line explains a good deal of it';
+    dSentence(b, '<b>' + signed(slope, 1) + ' min</b> per day, per year. Fitted across ' + fmtInt(T) + ' days, r² ' + r2.toFixed(2) + ', ' + fit + '.' + ext);
+  }, () => multiyear() && DAILY().T >= 2);
+
+  // Seasonal amplitude
+  add(3, 4, 'Seasonal amplitude', 'a one-year sine, fitted to your months', (b) => {
+    const cal = DAILY().cal;
+    const mins = new Array(12).fill(0), days = new Array(12).fill(0);
+    for (const d of cal) { const m = +d.dk.slice(5, 7) - 1; mins[m] += d.min; days[m]++; }
+    const y = mins.map((v, m) => days[m] ? v / days[m] : 0);
+    const ybar = sum(y) / 12;
+    let a = 0, bb = 0;
+    for (let m = 0; m < 12; m++) { const th = 2 * Math.PI * (m + 0.5) / 12; a += y[m] * Math.cos(th); bb += y[m] * Math.sin(th); }
+    a *= 2 / 12; bb *= 2 / 12;
+    const A = Math.sqrt(a * a + bb * bb);
+    let phi = Math.atan2(bb, a); if (phi < 0) phi += 2 * Math.PI;
+    const pk = new Date(2001, 0, 1); pk.setDate(pk.getDate() + Math.round(phi / (2 * Math.PI) * 365.25));
+    dSpark(b, y, { fmt: fmtInt, unit: 'min per day', labels: ['Jan', 'Dec'], names: MONTHS_FULL });
+    const biggest = y.reduce((mi, v, i) => v > y[mi] ? i : mi, 0);
+    const agree = biggest === pk.getMonth() ? 'The sine wave agrees with your ' + MONTHS_FULL[biggest] + '.' : 'Your biggest month is actually ' + MONTHS_FULL[biggest] + '; the sine wave smooths that out.';
+    const swing = A < ybar ? ' Peak to trough, that is a ' + Math.round(2 * A / (ybar - A) * 100) + '% swing.' : '';
+    dSentence(b, '<b>±' + Math.round(A / ybar * 100) + '%</b> around your average day, peaking around <b>' + MONTHS[pk.getMonth()] + ' ' + pk.getDate() + '</b>.' + swing + ' ' + agree);
+  }, () => {
+    if (!multiyear()) return false;
+    const cal = DAILY().cal, has = new Set(); let tot = 0;
+    for (const d of cal) if (d.min > 0) { has.add(d.dk.slice(5, 7)); tot += d.min; }
+    return has.size >= 12 && tot > 0;
+  });
+
+  // Heaps' law
+  add(4, 4, 'Heaps’ law', 'how your library grows with your streams', (b) => {
+    const X = DIST(), pts = X.marks.filter(p => p[0] >= 50);
+    const xs = pts.map(p => Math.log(p[0])), ys = pts.map(p => Math.log(p[1]));
+    const n = xs.length, xbar = sum(xs) / n, ybar = sum(ys) / n;
+    let sxy = 0, sxx = 0;
+    for (let i = 0; i < n; i++) { sxy += (xs[i] - xbar) * (ys[i] - ybar); sxx += (xs[i] - xbar) ** 2; }
+    const beta = sxy / sxx;
+    dSpark(b, X.marks.map(p => p[1]), { fmt: fmtInt, unit: 'distinct songs', diag: true, max: X.tot, labels: ['first stream', 'stream ' + fmtInt(X.tot)], names: X.marks.map(p => 'after ' + fmtInt(p[0]) + ' streams') });
+    dSentence(b, 'beta <b>' + beta.toFixed(2) + '</b>. Doubling your streams grows your library by ' + Math.round((Math.pow(2, beta) - 1) * 100) + '%, not 100%. The diagonal is a listener who never repeats anything.');
+  }, () => S.streams >= 1000 && DIST().tr.length >= 100 && DIST().marks.filter(p => p[0] >= 50).length >= 10);
+
+  // Mean vs median
+  add(2, 3, 'Mean vs median', 'your average day against your typical day', (b) => {
+    const Dd = DAILY(), m = Dd.mean, M = Dd.median, diff = m - M;
+    const g1 = Dd.m2 > 0 ? Dd.m3 / Math.pow(Dd.m2, 1.5) : 0;
+    const ratio = M > 0 ? m / M : 2;
+    const read = ratio > 1.1 ? 'A handful of enormous days are doing the lifting; the median is the day you actually have.' : ratio >= 0.9 ? 'Nearly symmetric, which is rare.' : 'A run of small days is dragging the average down.';
+    const gap = Math.abs(diff) < 0.5 ? 'The mean and the median are <b>within a minute</b> of each other.' : 'The mean is <b>' + fmtInt(Math.abs(diff)) + ' minute' + (Math.round(Math.abs(diff)) === 1 ? '' : 's') + '</b> ' + (diff > 0 ? 'above' : 'below') + ' the median.';
+    dVersus(b, { label: 'mean', v: m, val: fmtInt(m) + ' min' }, { label: 'median', v: M, val: fmtInt(M) + ' min' }, { note: gap + ' ' + read + ' Skewness ' + fx(g1, 2) + '.' });
+  }, () => DAILY().n >= 30);
+
+  // The middle half
+  add(3, 2, 'The middle half', 'interquartile range of your sessions', (b) => {
+    const s = MAIN().sessions.slice().sort((a, c) => a - c), n = s.length;
+    const q1 = s[Math.floor(0.25 * (n - 1))], q3 = s[Math.floor(0.75 * (n - 1))];
+    dBig(b, fmtDur(q3 - q1), '', 'The middle half of your ' + fmtInt(n) + ' sessions run from <b>' + fmtDur(q1) + ' to ' + fmtDur(q3) + '</b>. Outside that is either a quick check or a lost afternoon.');
+  }, () => MAIN().sessions.length >= 30);
+
+  // The skew of your day
+  add(4, 2, 'The skew of your day', 'which way your listening leans', (b) => {
+    const hours = new Array(24).fill(0);
+    for (let i = 0; i < 1440; i++) hours[Math.floor(i / 60)] += D.minuteOfDay[i];
+    let h0 = 0; for (let h = 1; h < 24; h++) if (hours[h] < hours[h0]) h0 = h;
+    let W = 0, mu = 0;
+    for (let i = 0; i < 1440; i++) { const w = D.minuteOfDay[i]; W += w; mu += w * ((i - 60 * h0 + 1440) % 1440); }
+    mu /= W;
+    let m2 = 0, m3 = 0;
+    for (let i = 0; i < 1440; i++) { const w = D.minuteOfDay[i], d = ((i - 60 * h0 + 1440) % 1440) - mu; m2 += w * d * d; m3 += w * d * d * d; }
+    m2 /= W; m3 /= W;
+    const g1 = rd(m2 > 0 ? m3 / Math.pow(m2, 1.5) : 0, 2);
+    const read = Math.abs(g1) < 0.2 ? 'Close to zero, so your listening sits balanced around its middle.' : g1 > 0 ? 'Positive, so your listening piles up early and trails off late. You start strong and fade.' : 'Negative, so your listening builds slowly to a late peak and stops sharp.';
+    dBig(b, signed(g1, 2), '', 'Skewness of the clock, measured from your quietest hour, ' + hourName(h0) + '. ' + read);
+  }, () => S.streams >= 500);
+
+  // Kurtosis, in words
+  add(7, 3, 'Kurtosis, in words', 'how fat the tails of your days are', (b) => {
+    const Dd = DAILY(), g2 = rd(Dd.m4 / (Dd.m2 * Dd.m2) - 3, 1);
+    const words = g2 <= 0.5 ? 'Flat: your days are more alike than a bell curve.' : g2 <= 3 ? 'Fat tails: your big days are bigger than a bell curve allows.' : 'Very fat tails: your big days are far bigger than a bell curve would allow.';
+    let far = null;
+    for (const [dk, ms] of S.days) { if (ms <= 0) continue; const z = (ms / MIN - Dd.mean) / Dd.sd; if (!far || Math.abs(z) > Math.abs(far.z)) far = { dk, z }; }
+    const which = far.z >= 0 ? 'biggest' : 'smallest';
+    dBig(b, fx(g2, 1), '', 'Excess kurtosis. ' + words + ' Your ' + which + ' day, <b>' + niceDate(new Date(far.dk + 'T12:00:00')) + '</b>, sits ' + Math.abs(far.z).toFixed(1) + ' standard deviations out' + (g2 > 3 ? ' and is most of the reason.' : '.'));
+  }, () => DAILY().n >= 60 && DAILY().sd > 0);
+
+  // Same person, next year
+  add(3, 3, 'Same person, next year', 'rank correlation of your artists across two years', (b) => {
+    const M = MAIN();
+    const q = [...M.yearStreams.entries()].filter(e => e[1] >= 500).map(e => e[0]).sort((a, c) => a - c);
+    const Y2 = q[q.length - 1], Y1 = q[q.length - 2];
+    const A1 = M.yearArtist.get(Y1), A2 = M.yearArtist.get(Y2);
+    const top = (m) => [...m.entries()].sort((a, c) => c[1] - a[1] || byName(a[0], c[0])).slice(0, 50).map(e => e[0]);
+    const uni = [...new Set(top(A1).concat(top(A2)))];
+    const v1 = uni.map(a => A1.get(a) || 0), v2 = uni.map(a => A2.get(a) || 0);
+    const ranks = (v) => {
+      const idx = v.map((x, i) => i).sort((a, c) => v[c] - v[a]);
+      const r = new Array(v.length);
+      for (let i = 0; i < idx.length;) { let j = i; while (j + 1 < idx.length && v[idx[j + 1]] === v[idx[i]]) j++; const avg = (i + j + 2) / 2; for (let k = i; k <= j; k++) r[idx[k]] = avg; i = j + 1; }
+      return r;
+    };
+    const r1 = ranks(v1), r2 = ranks(v2), n = uni.length;
+    const m1 = sum(r1) / n, m2 = sum(r2) / n;
+    let sxy = 0, sxx = 0, syy = 0;
+    for (let i = 0; i < n; i++) { sxy += (r1[i] - m1) * (r2[i] - m2); sxx += (r1[i] - m1) ** 2; syy += (r2[i] - m2) ** 2; }
+    const rho = rd(sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : 0, 2);
+    const read = rho >= 0.7 ? 'The same person.' : rho >= 0.4 ? 'Loosely the same person.' : rho >= 0.1 ? 'A cousin.' : 'A stranger.';
+    const pos = (v) => { const idx = v.map((x, i) => i).sort((a, c) => v[c] - v[a] || byName(uni[a], uni[c])); const p = new Array(v.length); idx.forEach((ix, k) => { p[ix] = k + 1; }); return p; };
+    const p1 = pos(v1), p2 = pos(v2);
+    let climb = null, arrival = null;
+    for (let i = 0; i < n; i++) {
+      if (v1[i] >= 1) { const gain = p1[i] - p2[i]; if (!climb || gain > climb.gain || (gain === climb.gain && v2[i] > v2[climb.i])) climb = { i, gain }; }
+      else if (v2[i] >= 1 && (!arrival || p2[i] < p2[arrival.i])) arrival = { i };
+    }
+    const partial = Y2 === S.last.getFullYear() && !(S.last.getMonth() === 11 && S.last.getDate() >= 28);
+    const yrs = Y1 + ' artists and their ' + Y2 + (partial ? ' ranks so far' : ' ranks');
+    let html = 'Your ' + yrs + ': Spearman <b>' + fx(rho, 2) + '</b>. ' + read;
+    if (climb && climb.gain > 0) html += ' Biggest climber: <b>' + esc(uni[climb.i]) + '</b>, from ' + ordinal(p1[climb.i]) + ' to ' + ordinal(p2[climb.i]) + '.';
+    else if (climb) html += ' Nobody who was there in ' + Y1 + ' climbed.';
+    if (arrival) html += ' Biggest new arrival: <b>' + esc(uni[arrival.i]) + '</b>, straight in at ' + ordinal(p2[arrival.i]) + '.';
+    dSentence(b, html);
+  }, () => multiyear() && [...MAIN().yearStreams.values()].filter(v => v >= 500).length >= 2);
+
+  // Guess the top-10 share
+  add(2, 4, 'Guess the top-10 share', 'what fraction of your streams go to your ten biggest artists', (b) => {
+    const X = DIST(), ten = X.artistsByPlays.slice(0, 10);
+    const share = Math.round(sum(ten.map(a => a.plays)) / X.N * 100), tenth = ten[9];
+    dGuess(b, { prompt: 'What share of your <b>' + fmtInt(X.N) + '</b> streams go to your ten biggest artists? A whole percent, 0 to 100.', actual: share, fmt: (v) => fmtInt(v) + '%', placeholder: 'your guess, in percent', after: 'The tenth artist on that list is <b>' + esc(tenth.name) + '</b>, at ' + pct1(tenth.plays / X.N) + '.' });
+  }, () => S.streams >= 500 && DIST().artistsByPlays.length >= 20);
+});
+
 /* ----- batch: interactive ----- */
 // interactive: cards that answer a touch. Every one renders a real default before
 // anyone types, drags or rolls; text lookups are case-insensitive substrings over names.

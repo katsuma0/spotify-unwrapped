@@ -21,7 +21,7 @@ native `DecompressionStream`).
   follows the system until you choose
 - Step-by-step in-app guide for requesting your data from Spotify, with iPhone
   specifics (safe areas and touch targets are iOS-ready)
-- **The deep end**: 101 statistics dealt at random from a vault of about 470
+- **The deep end**: 101 statistics dealt at random from a vault of about 490
   generators, sorted normal to weird. It opens with respectable charts and ends
   with "streams on days ending in y (100%)". Two dozen visual forms: alphabet
   charts, 7x24 heatmaps, calendar years, 24-hour clock dials, waffles,
