@@ -21,17 +21,21 @@ native `DecompressionStream`).
   follows the system until you choose
 - Step-by-step in-app guide for requesting your data from Spotify, with iPhone
   specifics (safe areas and touch targets are iOS-ready)
-- **The deep end**: 101 statistics dealt at random from a vault of ~150
-  generators, in a dozen visual forms (alphabet charts, a 7x24 heatmap,
-  podiums, meters, funnels, 60-second histograms, moon phases, unit
-  conversions, single-bar jokes). Ordered normal to weird: it opens with
-  respectable charts and ends with "streams on days ending in y (100%)".
-  Six interactive lookups (word detector, your minute, date file pull,
-  ransom note, bedtime audit, receipts). A shuffle button redeals a fresh
-  101. Mixed-size dense grid, uniform gaps, no numbering, minimal text.
-  Cards render progressively (time-budgeted chunks plus scroll-driven fill
-  plus IntersectionObserver) so scrolling stays smooth. Blocks that need
-  extended-export fields hide themselves on account-data-only uploads.
+- **The deep end**: 101 statistics dealt at random from a vault of about 490
+  generators, sorted normal to weird. It opens with respectable charts and ends
+  with "streams on days ending in y (100%)". Two dozen visual forms: alphabet
+  charts, 7x24 heatmaps, calendar years, 24-hour clock dials, waffles,
+  sparklines, versus bars, stacked shares, timelines, word clouds, dual
+  columns, barcodes, podiums, meters, tiles, big numbers, one-line sentences.
+  About forty interactive cards: sliders, guess-then-reveal, rerolls, and
+  type-an-artist lookups (head to head, their clock, their devices, the skip
+  file, the loyalty check, how long since). Every card has a corner button
+  that swaps it for an unused stat of the same size; a floating Shuffle
+  redeals the lot from wherever you are. Cards hide themselves when the
+  export lacks the field they need, so an account-data file still deals a
+  full 101. Cards render progressively so scrolling stays smooth.
+- A six-step guide to requesting the export from Spotify, with the exact taps
+  in the app, the wait times, and where the zip lands on each device.
 
 ## Run it
 
@@ -66,10 +70,23 @@ Two options:
    file structure, for testing the upload path. Regenerate with
    `python3 sample/make_sample.py`.
 
+## Checking the deep end
+
+`tools/deep-end-check.js` renders every stat in the vault for all six personas,
+the sample zip, and an account-data-only slice of it, and reports errors, empty
+cards, em dashes, emojis, NaN, overflow, and slow renders. It also exercises the
+deal, the swap button, three redeals, the floating shuffle, and phone width.
+`tools/deep-end-gallery.js` screenshots one batch so you can eyeball it. Both
+need Node and a Playwright install with Chromium (`npm i -g playwright && npx
+playwright install chromium`); there is still no package.json.
+
+```sh
+node tools/deep-end-check.js --persona all
+node tools/deep-end-gallery.js --persona devotee --only calendar --out /tmp/shots
+```
+
 ## Ideas for next steps
 
-- Year selector / date-range filter
-- Search any artist or track for its personal history
-- Sessions view (longest sessions, average session length)
-- Compare periods (this year vs last year)
+- Date-range filter beyond the year chips
+- A shareable summary card, generated on device
 - Wrap it in Capacitor for an iOS app (same shell as sitejournal-ios)
