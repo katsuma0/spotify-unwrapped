@@ -20,7 +20,7 @@ It is a prototype built on the web, but the real target is an iOS app. The plan 
 to wrap the same single HTML file in Capacitor later, so every design decision
 should feel at home on an iPhone, not just a desktop browser.
 
-The current version is v0.9. Versions are written v0.9, v0.10, v0.11, one number
+The current version is v0.10. Versions are written v0.9, v0.10, v0.11, one number
 after the dot, no second decimal.
 
 ## Who it is for and how it should feel
@@ -112,23 +112,31 @@ Dashboard, after a file loads:
 - Where you listen: platform share, only when platform data exists.
 
 The deep end:
-- 101 stats dealt at random from a pool of about 186 generators, so each visit and
-  each shuffle is a different set. It is sorted from normal at the top to weird at
-  the bottom. Every generator carries a weirdness weight, and the deal is sorted by
-  that weight with some jitter.
-- No section header, no explanation. You just keep scrolling and stats keep coming.
-- The stats span many visual forms: 26-letter alphabet bar charts, a 7 by 24
-  heatmap, podiums, meters, funnels, a 60-row second-by-second chart, column
-  charts, ranked lists, big single numbers, one-line sentences, and six
-  interactive lookups (a word detector, a pick-a-minute tool, a pick-a-date file,
-  a ransom note speller, a bedtime audit, and a "receipts for your favorite
-  artist" input). A few are deliberately dumb one-bar jokes, like "streams on days
-  ending in y, 100 percent."
+- 101 stats dealt at random from a vault of about 470 generators, so each visit
+  and each shuffle is a different set. It is sorted from normal at the top to
+  weird at the bottom. Every generator carries a weirdness weight, and the deal
+  is sorted by that weight with some jitter. One line at the entrance says how
+  many are in the vault and that the corner button swaps a card.
+- The vault is organised in batches, each registered through a small `vault()`
+  function with its own memoized pass over the plays: calendar, habits,
+  sequences, lifecycle, awards, skips, albums and devices and podcasts, titles,
+  visual forms, interactive lookups, Canadian conversions, statistics, and the
+  joke drawer, on top of the original pool.
+- The stats span two dozen visual forms: alphabet bar charts, 7 by 24 heatmaps,
+  calendar years (53 by 7), 24-hour clock dials, waffles (100 dots), sparklines,
+  versus bars, stacked shares, timelines, word clouds, dual columns, barcodes
+  (one tick a day), podiums, meters, funnels, ranked lists, tiles, big numbers,
+  and one-line sentences. About forty cards are interactive: sliders, guess-then-
+  reveal, reroll buttons, and type-an-artist or type-a-song lookups.
+- Every card has a small corner button that swaps it for an unused stat of the
+  same size, so one dud is a one-tap fix. A floating Shuffle pill appears once
+  the deep end is on screen and redeals from wherever you are; the button at the
+  very bottom does the same.
 - Tiles come in mixed widths and pack into rows that always fill exactly, with a
   uniform 14px gap everywhere. Full-width charts take their own row. Number cards
   group together. Nothing leaves a hole and no small card is stretched wide.
-- At the very bottom, one button, "Shuffle again," jumps to the top and deals a
-  fresh 101.
+- Cards that need a field the export does not carry hide themselves, so an
+  account-data file still deals a full 101 from the stats it can support.
 
 ## The visual design system
 
@@ -208,16 +216,16 @@ knows what they are doing, talking plainly, not performing.
 This is the open space. Pick one at a time.
 
 - Onboarding and the landing screen. The first thing someone sees. Right now it is
-  a drop zone plus a text guide. It could be warmer and clearer, especially the
-  "how to get your file from Spotify" walkthrough on a phone.
+  a drop zone plus a six-step numbered guide to the Spotify export. It could be
+  warmer still.
 - States. Loading while a large export parses, an error when the wrong file is
   dropped, and the empty and partial-data cases (account-data-only, which hides a
   lot of stats).
 - A shareable summary. A single card or image a user could screenshot and send,
   built from their stats. Has to be generated on device.
-- The deep-end experience. It works, but the entrance into it, the pacing from
-  normal to weird, and the "shuffle again" moment could all be designed rather than
-  just functional.
+- The deep-end experience. Swap and the floating shuffle exist now, but the
+  entrance into it and the pacing from normal to weird could still be designed
+  rather than just functional.
 - The iOS app chrome. What the app looks like as an installed app: the icon, the
   launch screen, the status bar, how the top of the scroll meets the notch.
 - Settings or a home base. Currently there is no settings surface. If we add one
